@@ -1,4 +1,4 @@
-local luacats_grammar = require("docgen.grammar")
+local luacats_grammar = require("docgen.grammar.luacats")
 
 --- @class docgen.luacats.parser.param
 --- @field name string

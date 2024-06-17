@@ -6,7 +6,9 @@ describe("class", function()
   --- @param exp table<string,string>
   local function test(name, text, exp)
     exp = vim.deepcopy(exp, true)
-    it(name, function() assert.are.same(exp, parser.parse_str(text, "myfile.lua")) end)
+    it(name, function()
+      assert.are.same(exp, parser.parse_str(text, "myfile.lua"))
+    end)
   end
 
   local exp = {
@@ -100,6 +102,45 @@ describe("class", function()
   )
 end)
 
+describe("param", function()
+  --- @param name string
+  --- @param text string
+  --- @param exp table
+  local function test(name, text, exp)
+    local _, actual, _, _ = parser.parse_str(text, "myfile.lua")
+    it(name, function()
+      assert.are.same(#exp, #actual)
+      assert.are.same(exp, actual)
+    end)
+  end
+  test(
+    "neovim core edge case",
+    [[
+local M = {}
+
+---@param hello vim.type (table) this is a description
+M.foo = function(hello) end
+
+return M
+]],
+    {
+      {
+        module = "myfile.lua",
+        modvar = "M",
+        name = "foo",
+        params = {
+          {
+            desc = "this is a description",
+            name = "hello",
+            type = "table",
+          },
+        },
+        table = true,
+      },
+    }
+  )
+end)
+
 describe("brief", function()
   --- @param name string
   --- @param text string
@@ -111,7 +152,6 @@ describe("brief", function()
       assert.are.same(exp, actual)
     end)
   end
-
   test(
     "empty",
     [[
@@ -128,6 +168,4 @@ describe("brief", function()
   ]],
     { "\nhello" }
   )
-
-
 end)

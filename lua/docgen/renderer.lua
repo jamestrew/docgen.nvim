@@ -15,20 +15,23 @@ local states = {
 }
 
 local MAX_WIDTH = 78
+local TAB_WIDTH = 2
 
----@class docgen.renderer.Description
+---@class docgen.renderer.Markdown
 ---@field state docgen.renderer.states
 ---@field lines string[]
 ---@field curr_pos integer
 ---@field peek_line integer?
 ---@field output_lines string[]
-local Description = {}
-Description.__index = Description
+local Markdown = {}
+Markdown.__index = Markdown
 
 ---@param input string
----@return docgen.renderer.Description
-function Description:new(input)
+---@return docgen.renderer.Markdown
+function Markdown:new(input)
   input = vim.trim(input):gsub("\r?\n", "\n")
+  input = input:gsub("\r", "\n")
+  input = input:gsub("([^\n]*)\t", string.rep(" ", TAB_WIDTH))
 
   local obj = setmetatable({
     state = states.PARAGRAPH,
@@ -36,39 +39,18 @@ function Description:new(input)
     curr_pos = 1,
     peek_pos = 2,
     output_lines = {},
-  }, Description)
+  }, Markdown)
 
   return obj
 end
 
----@param line string
----@return docgen.renderer.states
----@return string?
-function Description:new_state(line)
-  line = vim.trim(line)
-
-  if vim.startswith(line, "-") then
-    self.state = states.UL
-  elseif vim.trim(line):match("^[0-9]") then
-    self.state = states.OL
-  elseif line == "```" then
-    return states.CODE
-  elseif vim.trim(line):match("```(.*)") then
-    local lang = vim.trim(line):match("```(.*)")
-    return states.CODE, vim.trim(lang)
-  elseif line == "<pre>" then
-    return states.PRE
-  end
-  return states.PARAGRAPH
-end
-
 ---@param index integer
 ---@return docgen.renderer.states
-function Description:line_type(index)
+function Markdown:line_type(index)
   local line = vim.trim(self.lines[index])
-  if vim.startswith(line, "-") then
+  if vim.startswith(line, "- ") or vim.startswith(line, "* ") or vim.startswith(line, "+ ") then
     return states.UL
-  elseif line:match("^[0-9]") then
+  elseif line:match("^%d+%.") then
     return states.OL
   elseif vim.startswith(line, "```") then
     return states.CODE
@@ -79,46 +61,92 @@ function Description:line_type(index)
   end
 end
 
-function Description:parse()
-  local curr_type = self:line_type(self.curr_pos)
-  if curr_type == states.UL then
-    self:parse_ul()
-  elseif curr_type == states.OL then
-    self:parse_ol()
-  elseif curr_type == states.CODE then
-    self:parse_code_block()
-  elseif curr_type == states.PRE then
-    self:parse_pre_block()
-  else
-    self:parse_paragraphs()
+function Markdown:parse()
+  while self.curr_pos <= #self.lines do
+    local curr_type = self:line_type(self.curr_pos)
+    if curr_type == states.UL then
+      self:parse_list_item(1)
+    elseif curr_type == states.OL then
+      self:parse_ol()
+    elseif curr_type == states.CODE then
+      self:parse_code_block()
+    elseif curr_type == states.PRE then
+      self:parse_pre_block()
+    else
+      self:parse_paragraphs("")
+    end
   end
 end
 
-function Description:parse_ul() end
-function Description:parse_ol() end
-function Description:parse_code_block() end
-function Description:parse_pre_block() end
+function Markdown:parse_ul() end
+function Markdown:parse_ol() end
 
-function Description:parse_paragraphs()
+---@param depth integer indentation depth of current node
+function Markdown:parse_list_item(depth)
+  -- iterate over lines
+  -- collect while tabbed lines (tab depth depending on `depth`) -> these lines are all paragraphs in the current list item
+  -- parse the paragraph with `parse_paragraph`
+
+  depth = depth * TAB_WIDTH
+
   local lines = {}
   local end_pos = self.curr_pos
   for i = self.curr_pos, #self.lines do
+    local line = self.lines[i]
+    local line_depth = #line - #vim.trim(line)
+    if line_depth == depth or line == "" then
+      end_pos = i
+      self:append_para(i, lines)
+    else
+      break
+    end
+  end
+
+  lines[1] = lines[1]:gsub("^%s%-", "")
+  local text = table.concat(lines, "")
+  self:parse_paragraph_lines(table.concat(lines, ""), "")
+
+  -- currently only concerned with unordered lists but maybe want to track the
+  -- list number for later when handling orderer lists
+  self.curr_pos = end_pos + 1
+end
+
+function Markdown:parse_code_block() end
+function Markdown:parse_pre_block() end
+
+function Markdown:append_para(idx, lines)
+  if self.lines[idx] == "" then
+    table.insert(lines, "\n")
+  else
+    local line = self.lines[idx]
+    if self.lines[idx + 1] ~= "" then line = line .. " " end
+    table.insert(lines, line)
+  end
+end
+
+function Markdown:parse_paragraphs()
+  local lines = {}
+  local end_pos = #self.lines
+  for i = self.curr_pos, end_pos do
     if self:line_type(i) == states.PARAGRAPH then
       end_pos = i
-      if self.lines[i] == "" then
-        table.insert(lines, "\n")
-      else
-        local line = self.lines[i]
-        if self.lines[i + 1] ~= "" then line = line .. " " end
-        table.insert(lines, line)
-      end
+      self:append_para(i, lines)
     else
       break
     end
   end
 
   local text = table.concat(lines, "")
+  lines = self:parse_paragraph_lines(text, "")
+  self.output_lines = lines
+  self.curr_pos = end_pos + 1
+end
 
+---@param text string
+---@param prefix string
+---@return string[]
+function Markdown:parse_paragraph_lines(text, prefix)
+  local lines = {}
   for para in vim.gsplit(text, "\n\n") do
     local line_buf = {}
     for line in vim.gsplit(para, "<br>") do
@@ -134,16 +162,16 @@ function Description:parse_paragraphs()
         end
       end
     end
-    table.insert(self.output_lines, table.concat(line_buf, "\n"))
+    table.insert(lines, table.concat(line_buf, "\n"))
   end
 
-  self.curr_pos = end_pos
+  return lines
 end
 
 ---@param prefix string?
 ---@param width integer?
 ---@return string
-function Description:render(prefix, width)
+function Markdown:render(prefix, width)
   self:parse()
   return table.concat(self.output_lines, "\n")
 end
@@ -152,7 +180,7 @@ end
 ---@return string
 M.render_brief = function(brief)
   if brief then
-    local desc = Description:new(brief)
+    local desc = Markdown:new(brief)
     return desc:render()
   end
   return ""

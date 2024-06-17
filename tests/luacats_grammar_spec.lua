@@ -1,9 +1,11 @@
-local grammar = require("docgen.grammar")
+local grammar = require("docgen.grammar.luacats")
 
 --- @param text string
 --- @param exp table<string,string>
 local function test(text, exp)
-  it(string.format("can parse %q", text), function() assert.are.same(exp, grammar:match(text)) end)
+  it(string.format("can parse %q", text), function()
+    assert.are.same(exp, grammar:match(text))
+  end)
 end
 
 describe("params", function()

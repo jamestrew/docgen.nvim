@@ -86,6 +86,41 @@ describe("briefs", function()
 incididunt ut labore et dolore magna aliqua]]
   )
 
+  -- TODO: parse_str doesn't handle tabs
+  pending("handle tabs", function()
+    assert_brief("handle tabs", "---@brief\n--- hello", "hello world")
+  end)
+
+--   assert_brief(
+--     "basic unordered list",
+--     [[---@brief
+-- --- - hello
+-- --- - there
+-- ]],
+--     [[- hello
+-- - there]]
+--   )
+
+--   assert_brief(
+--     "unordered list with paragraphs",
+--     [[---@brief
+-- --- - hello
+-- ---
+-- ---   there
+-- --- - yoo
+-- ]],
+--     vim.trim([[
+-- - hello
+
+--   there
+-- - yoo]])
+--   )
+
+  pending("unordered list with sub items")
+  pending("basic ordered list")
+  pending("ordered list with sub items")
+  pending("list with mixed type sub items")
+
   --   assert_brief(
   --     "unordered list",
   --     [[---@brief

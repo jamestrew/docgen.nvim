@@ -6,27 +6,12 @@ local lpeg = vim.lpeg
 local P, R, S = lpeg.P, lpeg.R, lpeg.S
 local Ct, Cg = lpeg.Ct, lpeg.Cg
 
---- @param x vim.lpeg.Pattern
-local function rep(x)
-  return x ^ 0
-end
+local util = require("docgen.grammar.utils")
+local rep, rep1, opt, Pf, Sf = util.rep, util.rep1, util.opt, util.Pf, util.Sf
+local fill, any, num, letter = util.fill, util.any, util.num, util.letter
+local v = util.v
 
---- @param x vim.lpeg.Pattern
-local function rep1(x)
-  return x ^ 1
-end
-
---- @param x vim.lpeg.Pattern
-local function opt(x)
-  return x ^ -1
-end
-
-local ws = rep1(S(" \t"))
-local fill = opt(ws)
-
-local any = P(1) -- (consume one character)
-local letter = R("az", "AZ") + S("_$")
-local num = R("09")
+local ws = util.rep1(lpeg.S(" \t"))
 local ident = letter * rep(letter + num + S("-."))
 local string_single = P("'") * rep(any - P("'")) * P("'")
 local string_double = P('"') * rep(any - P('"')) * P('"')
@@ -34,16 +19,6 @@ local string_double = P('"') * rep(any - P('"')) * P('"')
 local literal = (string_single + string_double + (opt(P("-")) * num) + P("false") + P("true"))
 
 local lname = (ident + P("...")) * opt(P("?"))
-
---- @param x string
-local function Pf(x)
-  return fill * P(x) * fill
-end
-
---- @param x string
-local function Sf(x)
-  return fill * S(x) * fill
-end
 
 --- @param x vim.lpeg.Pattern
 local function paren(x)
@@ -65,13 +40,6 @@ local function comma(x)
   return opt(comma1(x))
 end
 
---- @type table<string,vim.lpeg.Pattern>
-local v = setmetatable({}, {
-  __index = function(_, k)
-    return lpeg.V(k)
-  end,
-})
-
 local colon = Pf(":")
 local opt_exact = opt(Cg(Pf("(exact)"), "access"))
 local access = P("private") + P("protected") + P("package")
@@ -82,48 +50,48 @@ local opt_desc = opt(desc_delim * desc)
 local cname = Cg(ident, "name")
 local opt_parent = opt(colon * Cg(ident, "parent"))
 
---- @class docgen.luacats.Param
+--- @class docgen.grammar.luacats.Param
 --- @field kind 'param'
 --- @field name string
 --- @field type string
 --- @field desc? string
 
---- @class docgen.luacats.Return
+--- @class docgen.grammar.luacats.Return
 --- @field kind 'return'
 --- @field [integer] { type: string, name?: string}
 --- @field desc? string
 
---- @class docgen.luacats.Generic
+--- @class docgen.grammar.luacats.Generic
 --- @field kind 'generic'
 --- @field name string
 --- @field type? string
 
---- @class docgen.luacats.Class
+--- @class docgen.grammar.luacats.Class
 --- @field kind 'class'
 --- @field name string
 --- @field parent? string
 --- @field access? 'private'|'protected'|'package'
 
---- @class docgen.luacats.Field
+--- @class docgen.grammar.luacats.Field
 --- @field kind 'field'
 --- @field name string
 --- @field type string
 --- @field desc? string
 --- @field access? 'private'|'protected'|'package'
 
---- @class docgen.luacats.Note
+--- @class docgen.grammar.luacats.Note
 --- @field desc? string
 
---- @alias docgen.luacats.grammar.result
---- | docgen.luacats.Param
---- | docgen.luacats.Return
---- | docgen.luacats.Generic
---- | docgen.luacats.Class
---- | docgen.luacats.Field
---- | docgen.luacats.Note
+--- @alias docgen.grammar.luacats.result
+--- | docgen.grammar.luacats.Param
+--- | docgen.grammar.luacats.Return
+--- | docgen.grammar.luacats.Generic
+--- | docgen.grammar.luacats.Class
+--- | docgen.grammar.luacats.Field
+--- | docgen.grammar.luacats.Note
 
---- @class docgen.luacats.grammar
---- @field match fun(self, input: string): docgen.luacats.grammar.result?
+--- @class docgen.grammar.luacats
+--- @field match fun(self, input: string): docgen.grammar.luacats.result?
 
 local function annot(nm, pat)
   if type(nm) == "string" then nm = P(nm) end
@@ -178,4 +146,4 @@ local grammar = P({
   ty_generic = P("`") * letter * P("`"),
 })
 
-return grammar --[[@as docgen.luacats.grammar]]
+return grammar --[[@as docgen.grammar.luacats]]
