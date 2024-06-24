@@ -1,142 +1,183 @@
+---@diagnostic disable: invisible
+
 local parser = require("docgen.parser")
 local renderer = require("docgen.renderer")
 
-local s_lit = function(s)
-  if s == nil then return "" end
-  return s:gsub("\n", "\\n")
+local function string_literal(str)
+  str = string.gsub(str, "\n", "\\n")
+  str = string.gsub(str, "\t", "\\t")
+  str = string.gsub(str, " ", "·")
+  return str
+end
+
+local inspect_diff = function(a, b, md)
+  local opts = {
+    ctxlen = 10,
+    algorithm = "minimal",
+  }
+  ---@diagnostic disable-next-line: missing-parameter
+  return "expected-actual\n"
+    .. tostring(vim.diff(string_literal(a), string_literal(b), opts))
+    .. "\n"
+    .. vim.inspect(md)
 end
 
 describe("briefs", function()
-  ---@param name string
-  ---@param input string
-  ---@param expect string
-  local assert_brief = function(name, input, expect)
-    it(name, function()
-      local _, _, brief, _ = parser.parse_str(input, "myfile.lua")
-      local actual = renderer.render_brief(brief[1])
-      assert.are.same(s_lit(expect), s_lit(actual))
-    end)
+  local assert_brief = function(input, expect, indents)
+    input = vim.trim(input) .. "\n"
+    expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
+    indents = indents or 0
+    local _, _, briefs, _ = parser.parse_str(input, "foo.lua")
+    local md = briefs[1]
+    local actual = renderer.render_markdown(md, indents)
+    assert.are.same(expect, actual, inspect_diff(expect, actual, md))
   end
 
-  assert_brief("empty", "---@brief", "")
+  describe("paragraphs", function()
+    it("single line", function()
+      local input = [[---@brief
+--- this is a single line]]
+      local expect = "this is a single line"
+      assert_brief(input, expect)
+    end)
 
-  assert_brief(
-    "basic",
-    [[---@brief
---- hello
-    ]],
-    "hello"
-  )
+    it("single line wrap, no indent", function()
+      local input = [[---@brief
+--- Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
+      ]]
+      local expect = [[
+Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+BBBBBBBBBB
+      ]]
+      assert_brief(input, expect)
+    end)
 
-  assert_brief(
-    "single paragraph",
-    [[---@brief
----abc
----def
-    ]],
-    "abc def"
-  )
+    it("one paragraph with line break", function()
+      local input = [[
+---@brief
+--- New paragraph with line break<br>Should be new line.
+      ]]
+      local expect = [[
+New paragraph with line break
+Should be new line.
+      ]]
+      assert_brief(input, expect)
+    end)
 
-  assert_brief(
-    "two paragraphs",
-    [[---@brief
----abc
+    it("one paragrpah with line break and wrap", function()
+      local input = [[
+---@brief
+--- New paragraph with line break<br>Should be new line. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      ]]
+      local expect = [[
+New paragraph with line break
+Should be new line. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      ]]
+      assert_brief(input, expect)
+    end)
+
+    it("many paragraphs, no indents", function()
+      local input = [[
+---@brief
+--- Just short of 78 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 ---
---- def
-    ]],
-    "abc\ndef"
-  )
+--- Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
+---
+--- New paragraph with line break<br><br>Should be new line.
+      ]]
+      local expect = [[
+Just short of 78 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-  assert_brief(
-    "two paragraphs with <br>",
-    [[---@brief
----abc<br>
----def
-    ]],
-    "abc\ndef"
-  )
+Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+BBBBBBBBBB
 
-  assert_brief(
-    "two paragraphs with <br> on the same line",
-    [[---@brief
----abc<br>def
-    ]],
-    "abc\ndef"
-  )
+New paragraph with line break
 
-  assert_brief(
-    "<br> spam",
-    [[---@brief
---- <br>
---- <br>
---- <br>
---- <br>
---- <br>
---- finally
-    ]],
-    "\n\n\n\n\nfinally"
-  )
+Should be new line.
+      ]]
+      assert_brief(input, expect)
+    end)
 
-  assert_brief(
-    "text wrap",
-    [[---@brief
-  --- Lorum ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua
-      ]],
-    [[Lorum ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua]]
-  )
+    it("one para, 1 indent", function()
+      local input = [[
+---@brief
+--- Just short of 78 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      ]]
+      local expect = [[
+    Just short of 78 characters
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      ]]
+      assert_brief(input, expect, 1)
+    end)
 
-  -- TODO: parse_str doesn't handle tabs
-  pending("handle tabs", function()
-    assert_brief("handle tabs", "---@brief\n--- hello", "hello world")
+    it("many paragraphs, 1 indent", function()
+      local input = [[
+---@brief
+--- Just short of 78 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+---
+--- Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
+---
+--- New paragraph with line break<br><br>Should be new line.
+      ]]
+      local expect = [[
+    Just short of 78 characters
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+    Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    BBBBBBBBBB
+
+    New paragraph with line break
+
+    Should be new line.
+      ]]
+      assert_brief(input, expect, 1)
+    end)
   end)
 
---   assert_brief(
---     "basic unordered list",
---     [[---@brief
--- --- - hello
--- --- - there
--- ]],
---     [[- hello
--- - there]]
---   )
+  describe("code blocks", function()
+    it("no language", function()
+      local input = [[
+---@brief
+--- ```
+---
+--- print('hello')
+---
+--- print('world')
+--- ```
+      ]]
+      local expect = [[
+>
 
---   assert_brief(
---     "unordered list with paragraphs",
---     [[---@brief
--- --- - hello
--- ---
--- ---   there
--- --- - yoo
--- ]],
---     vim.trim([[
--- - hello
+print('hello')
 
---   there
--- - yoo]])
---   )
+print('world')
+<
+      ]]
+      assert_brief(input, expect)
+    end)
 
-  pending("unordered list with sub items")
-  pending("basic ordered list")
-  pending("ordered list with sub items")
-  pending("list with mixed type sub items")
+    it("with language", function()
+      local input = [[
+---@brief
+--- ```lua
+---
+--- print('hello')
+---
+--- print('world')
+--- ```
+      ]]
+      local expect = [[
+>lua
 
-  --   assert_brief(
-  --     "unordered list",
-  --     [[---@brief
-  -- --- - Item 1
-  -- ---   - Item 1.1 This item will be wrapped as well and the result will be as expected. This is really handy.
-  -- ---     - Item 1.1.1
-  -- ---   - Item 1.2
-  -- --- - Item 2
-  --     ]],
-  --     vim.trim([[
-  -- - Item 1
-  --   - Item 1.1 This item will be wrapped as well and the result will be as
-  --     expected. This is really handy.
-  --     - Item 1.1.1
-  --   - Item 1.2
-  -- - Item 2
-  --     ]])
-  --   )
+print('hello')
+
+print('world')
+<
+      ]]
+      assert_brief(input, expect)
+    end)
+  end)
+
+  describe("pre blocks", function() end)
+  describe("lists", function() end)
 end)

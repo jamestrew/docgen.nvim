@@ -1,189 +1,92 @@
 local M = {}
 
-local s_lit = function(s)
-  if s == nil then return "" end
-  return s:gsub("\n", "\\n")
+local TEXT_WIDTH = 78
+local TAB_WIDTH = 4
+local TAB = string.rep(" ", TAB_WIDTH)
+
+--- comment
+--- @param classes table<string, docgen.luacats.parser.class>
+--- @return string
+M.render_classes = function(classes)
+  return ""
 end
 
----@enum docgen.renderer.states
-local states = {
-  PARAGRAPH = 0,
-  OL = 1,
-  UL = 2,
-  CODE = 3,
-  PRE = 4,
-}
-
-local MAX_WIDTH = 78
-local TAB_WIDTH = 2
-
----@class docgen.renderer.Markdown
----@field state docgen.renderer.states
----@field lines string[]
----@field curr_pos integer
----@field peek_line integer?
----@field output_lines string[]
-local Markdown = {}
-Markdown.__index = Markdown
-
----@param input string
----@return docgen.renderer.Markdown
-function Markdown:new(input)
-  input = vim.trim(input):gsub("\r?\n", "\n")
-  input = input:gsub("\r", "\n")
-  input = input:gsub("([^\n]*)\t", string.rep(" ", TAB_WIDTH))
-
-  local obj = setmetatable({
-    state = states.PARAGRAPH,
-    lines = vim.split(input, "\n"),
-    curr_pos = 1,
-    peek_pos = 2,
-    output_lines = {},
-  }, Markdown)
-
-  return obj
+--- comment
+--- @param funs docgen.luacats.parser.fun[]
+--- @return string
+M.render_funs = function(funs)
+  return ""
 end
 
----@param index integer
----@return docgen.renderer.states
-function Markdown:line_type(index)
-  local line = vim.trim(self.lines[index])
-  if vim.startswith(line, "- ") or vim.startswith(line, "* ") or vim.startswith(line, "+ ") then
-    return states.UL
-  elseif line:match("^%d+%.") then
-    return states.OL
-  elseif vim.startswith(line, "```") then
-    return states.CODE
-  elseif vim.startswith(line, "<pre>") then
-    return states.PRE
-  else
-    return states.PARAGRAPH
-  end
-end
+---@package
+---@param markdown docgen.grammar.markdown.result[]
+---@param start_indent integer
+---@return string
+M.render_markdown = function(markdown, start_indent)
+  local res = {} ---@type string[]
+  local tabs = string.rep(TAB, start_indent)
 
-function Markdown:parse()
-  while self.curr_pos <= #self.lines do
-    local curr_type = self:line_type(self.curr_pos)
-    if curr_type == states.UL then
-      self:parse_list_item(1)
-    elseif curr_type == states.OL then
-      self:parse_ol()
-    elseif curr_type == states.CODE then
-      self:parse_code_block()
-    elseif curr_type == states.PRE then
-      self:parse_pre_block()
-    else
-      self:parse_paragraphs("")
-    end
-  end
-end
-
-function Markdown:parse_ul() end
-function Markdown:parse_ol() end
-
----@param depth integer indentation depth of current node
-function Markdown:parse_list_item(depth)
-  -- iterate over lines
-  -- collect while tabbed lines (tab depth depending on `depth`) -> these lines are all paragraphs in the current list item
-  -- parse the paragraph with `parse_paragraph`
-
-  depth = depth * TAB_WIDTH
-
-  local lines = {}
-  local end_pos = self.curr_pos
-  for i = self.curr_pos, #self.lines do
-    local line = self.lines[i]
-    local line_depth = #line - #vim.trim(line)
-    if line_depth == depth or line == "" then
-      end_pos = i
-      self:append_para(i, lines)
-    else
-      break
-    end
+  local function clean_newline(line)
+    return line ~= tabs and line .. "\n" or "\n"
   end
 
-  lines[1] = lines[1]:gsub("^%s%-", "")
-  local text = table.concat(lines, "")
-  self:parse_paragraph_lines(table.concat(lines, ""), "")
+  for _, block in ipairs(markdown) do
+    if block.kind == "paragraph" then
+      local line = tabs
+      for para_line in vim.gsplit(block.text, "\n") do
+        for word in para_line:gmatch("%S+") do
+          if #line + #word + 1 > TEXT_WIDTH then
+            line = line .. "\n"
+            table.insert(res, line)
+            line = tabs
+          end
 
-  -- currently only concerned with unordered lists but maybe want to track the
-  -- list number for later when handling orderer lists
-  self.curr_pos = end_pos + 1
-end
-
-function Markdown:parse_code_block() end
-function Markdown:parse_pre_block() end
-
-function Markdown:append_para(idx, lines)
-  if self.lines[idx] == "" then
-    table.insert(lines, "\n")
-  else
-    local line = self.lines[idx]
-    if self.lines[idx + 1] ~= "" then line = line .. " " end
-    table.insert(lines, line)
-  end
-end
-
-function Markdown:parse_paragraphs()
-  local lines = {}
-  local end_pos = #self.lines
-  for i = self.curr_pos, end_pos do
-    if self:line_type(i) == states.PARAGRAPH then
-      end_pos = i
-      self:append_para(i, lines)
-    else
-      break
-    end
-  end
-
-  local text = table.concat(lines, "")
-  lines = self:parse_paragraph_lines(text, "")
-  self.output_lines = lines
-  self.curr_pos = end_pos + 1
-end
-
----@param text string
----@param prefix string
----@return string[]
-function Markdown:parse_paragraph_lines(text, prefix)
-  local lines = {}
-  for para in vim.gsplit(text, "\n\n") do
-    local line_buf = {}
-    for line in vim.gsplit(para, "<br>") do
-      line = vim.trim(line)
-      if line == "" then
-        table.insert(line_buf, line)
-      else
-        local start, finish = 1, math.min(#line, MAX_WIDTH)
-        while start < #line do
-          table.insert(line_buf, vim.trim(line:sub(start, finish)))
-          start = finish + 1
-          finish = math.min(#line, finish + MAX_WIDTH)
+          line = line ~= tabs and line .. " " .. word or tabs .. word
         end
+
+        line = clean_newline(line)
+        table.insert(res, line)
+        line = tabs
       end
+      line = clean_newline(line)
+      table.insert(res, line)
+    elseif block.kind == "code" then
+      table.insert(res, tabs .. ">" .. (block.lang or "") .. "\n")
+      for line in vim.gsplit(block.code:gsub("\n$", ""), "\n") do
+        table.insert(res, tabs .. line .. "\n")
+      end
+      table.insert(res, tabs .. "<\n")
     end
-    table.insert(lines, table.concat(line_buf, "\n"))
   end
 
-  return lines
+  return (table.concat(res):gsub("[ \n]+$", ""))
 end
 
----@param prefix string?
----@param width integer?
----@return string
-function Markdown:render(prefix, width)
-  self:parse()
-  return table.concat(self.output_lines, "\n")
-end
-
----@param brief string?
----@return string
-M.render_brief = function(brief)
-  if brief then
-    local desc = Markdown:new(brief)
-    return desc:render()
-  end
+--- comment
+--- @param briefs docgen.grammar.markdown.result[]
+--- @return string
+M.render_briefs = function(briefs)
   return ""
 end
 
 return M
+
+--[[
+
+Just short of 78 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+New paragraph as 79 characters BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB BBBBBBBBBA
+Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
+
+New paragraph with line break<br>Should be new line.
+
+---
+
+Just short of 78 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+New paragraph as 79 characters BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+BBBBBBBBBA
+
+New paragraph with line break
+Should be new line.
+]]
