@@ -1,26 +1,27 @@
 local luacats_grammar = require("docgen.grammar.luacats")
+local markdown_grammar = require("docgen.grammar.markdown")
 
 --- @class docgen.luacats.parser.param
 --- @field name string
 --- @field type string
---- @field desc string
+--- @field desc? string
 
 --- @class docgen.luacats.parser.return
 --- @field name string
 --- @field type string
---- @field desc string
+--- @field desc? string
 
 --- @class docgen.luacats.parser.note
---- @field desc string
+--- @field desc? string
 
 --- @class docgen.luacats.parser.brief
 --- @field kind 'brief'
---- @field desc string
+--- @field desc? string
 
 --- @class docgen.luacats.parser.alias
 --- @field kind 'alias'
 --- @field type string[]
---- @field desc string
+--- @field desc? string
 
 --- @class docgen.luacats.parser.fun
 --- @field name string
@@ -70,25 +71,6 @@ local luacats_grammar = require("docgen.grammar.luacats")
 --- | docgen.luacats.parser.brief
 --- | docgen.luacats.parser.alias
 
--- Remove this when we document classes properly
---- Some doc lines have the form:
----   param name some.complex.type (table) description
---- if so then transform the line to remove the complex type:
----   param name (table) description
---- @param line string
-local function use_type_alt(line)
-  for _, type in ipairs({ "table", "function" }) do
-    line = line:gsub("@param%s+([a-zA-Z_?]+)%s+.*%((" .. type .. ")%)", "@param %1 %2")
-    line = line:gsub("@param%s+([a-zA-Z_?]+)%s+.*%((" .. type .. "|nil)%)", "@param %1 %2")
-    line = line:gsub("@param%s+([a-zA-Z_?]+)%s+.*%((" .. type .. "%?)%)", "@param %1 %2")
-
-    line = line:gsub("@return%s+.*%((" .. type .. ")%)", "@return %1")
-    line = line:gsub("@return%s+.*%((" .. type .. "|nil)%)", "@return %1")
-    line = line:gsub("@return%s+.*%((" .. type .. "%?)%)", "@return %1")
-  end
-  return line
-end
-
 --- If we collected any `---` lines. Add them to the existing (or new) object
 --- Used for function/class descriptions and multiline param descriptions.
 --- @param state docgen.luacats.parser.State
@@ -110,7 +92,6 @@ end
 --- @param state docgen.luacats.parser.State
 local function process_doc_line(line, state)
   line = line:sub(4):gsub("^%s+@", "@")
-  line = use_type_alt(line)
 
   local parsed = luacats_grammar:match(line)
 
@@ -144,7 +125,7 @@ local function process_doc_line(line, state)
       desc = parsed.desc,
     }
   elseif kind == "class" then
-    --- @cast parsed docgen.luacats.Class
+    --- @cast parsed docgen.grammar.luacats.Class
     cur_obj.kind = "class"
     cur_obj.name = parsed.name
     cur_obj.parent = parsed.parent
@@ -153,7 +134,7 @@ local function process_doc_line(line, state)
     state.doc_lines = nil
     cur_obj.fields = {}
   elseif kind == "field" then
-    --- @cast parsed docgen.luacats.Field
+    --- @cast parsed docgen.grammar.luacats.Field
     parsed.desc = parsed.desc or state.doc_lines and table.concat(state.doc_lines, "\n") or nil
     if parsed.desc then parsed.desc = vim.trim(parsed.desc) end
     table.insert(cur_obj.fields, parsed)
@@ -409,7 +390,7 @@ end
 --- @param obj docgen.luacats.parser.obj
 --- @param funs docgen.luacats.parser.fun[]
 --- @param classes table<string,docgen.luacats.parser.class>
---- @param briefs string[]
+--- @param briefs docgen.grammar.markdown.result[]
 --- @param uncommitted docgen.luacats.parser.obj[]
 local function commit_obj(obj, classes, funs, briefs, uncommitted)
   local commit = false
@@ -424,7 +405,7 @@ local function commit_obj(obj, classes, funs, briefs, uncommitted)
     commit = true
   elseif obj.kind == "brief" then
     --- @cast obj docgen.luacats.parser.brief`
-    briefs[#briefs + 1] = obj.desc
+    briefs[#briefs + 1] = markdown_grammar.parse_markdown(obj.desc)
     commit = true
   else
     --- @cast obj docgen.luacats.parser.fun`
@@ -466,12 +447,12 @@ local M = {}
 ---@param filename string
 ---@return table<string, docgen.luacats.parser.class>
 ---@return docgen.luacats.parser.fun[]
----@return string[]
+---@return docgen.grammar.markdown.result[]
 ---@return docgen.luacats.parser.alias|docgen.luacats.parser.brief|docgen.luacats.parser.class|docgen.luacats.parser.fun[]
 function M.parse_str(str, filename)
   local funs = {} --- @type docgen.luacats.parser.fun[]
   local classes = {} --- @type table<string,docgen.luacats.parser.class>
-  local briefs = {} --- @type string[]
+  local briefs = {} --- @type docgen.grammar.markdown.result[]
 
   local mod_return = determine_modvar(str)
 
@@ -480,7 +461,6 @@ function M.parse_str(str, filename)
   module = module:gsub("/", ".")
 
   local classvars = {} --- @type table<string,string>
-
   local state = {} --- @type docgen.luacats.parser.State
 
   -- Keep track of any partial objects we don't commit
