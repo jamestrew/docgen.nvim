@@ -30,6 +30,7 @@ describe("paragraphs", function()
   end
 
   test("single line", "this is a single line", { "this is a single line" })
+  test("single line bunch of spaces", "hello    world    ", { "hello world " })
   test("single line trimmed", "this is a single line\n", { "this is a single line" })
   test("single line even more trimmed", "this is a single line\n\n\n", { "this is a single line" })
   test("empty lines with single line", "\n   \nhello world", { "hello world" })

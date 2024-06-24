@@ -228,7 +228,7 @@ parser.space = C(
   linebreak
   + spacing ^ 1 * parser.endline ^ -1 * eof
   + spacing ^ 1 * parser.endline ^ -1 * fill
-)
+) / " "
 
 parser.blank = blank_line + tight_block_sep
 local blankline = parser.blank ^ 0
@@ -254,7 +254,7 @@ parser.grammar = {
 ---| docgen.grammar.markdown.paragraph
 
 ---@param str string input "markdown" text
----@return docgen.grammar.markdown.result
+---@return docgen.grammar.markdown.result[]
 M.parse_markdown = function(str)
   str = str .. "\n"
   return parser.blocks(str)
