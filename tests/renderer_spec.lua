@@ -163,6 +163,7 @@ print('world')
 ---
 --- print('hello')
 ---
+---
 --- print('world')
 --- ```
       ]]
@@ -171,6 +172,7 @@ print('world')
 
 print('hello')
 
+
 print('world')
 <
       ]]
@@ -178,6 +180,78 @@ print('world')
     end)
   end)
 
-  describe("pre blocks", function() end)
-  describe("lists", function() end)
+  it("pre blocks", function()
+    local input = [[
+---@brief
+--- <pre>
+--- You can disable formatting with a
+--- pre block.
+--- This is useful if you want to draw a table or write some code
+--- </pre>
+    ]]
+    local expect = [[
+You can disable formatting with a
+pre block.
+This is useful if you want to draw a table or write some code
+    ]]
+    assert_brief(input, expect)
+  end)
+
+  describe("ul", function()
+    it("one item", function()
+      local input = [[
+---@brief
+--- - item 1
+    ]]
+
+      local expect = [[
+- item 1
+    ]]
+      assert_brief(input, expect)
+    end)
+
+    it("two items, tight", function()
+      local input = [[
+---@brief
+--- - item 1
+--- - item 2
+      ]]
+
+      local expect = [[
+- item 1
+- item 2
+    ]]
+      assert_brief(input, expect)
+    end)
+
+    it("two items, loose", function()
+      local input = [[
+---@brief
+--- - item 1
+---
+--- - item 2
+      ]]
+
+      local expect = [[
+- item 1
+
+- item 2
+    ]]
+      assert_brief(input, expect)
+    end)
+
+    it("nested", function()
+      local input = [[
+---@brief
+--- - item 1
+---     - nested item
+      ]]
+
+      local expect = [[
+- item 1
+    - nested item
+      ]]
+      assert_brief(input, expect)
+    end)
+  end)
 end)

@@ -32,6 +32,7 @@ M.render_markdown = function(markdown, start_indent)
 
   for _, block in ipairs(markdown) do
     if block.kind == "paragraph" then
+      ---@cast block docgen.grammar.markdown.paragraph
       local line = tabs
       for para_line in vim.gsplit(block.text, "\n") do
         for word in para_line:gmatch("%S+") do
@@ -51,11 +52,25 @@ M.render_markdown = function(markdown, start_indent)
       line = clean_newline(line)
       table.insert(res, line)
     elseif block.kind == "code" then
+      ---@cast block docgen.grammar.markdown.code_block
       table.insert(res, tabs .. ">" .. (block.lang or "") .. "\n")
       for line in vim.gsplit(block.code:gsub("\n$", ""), "\n") do
         table.insert(res, tabs .. line .. "\n")
       end
       table.insert(res, tabs .. "<\n")
+    elseif block.kind == "pre" then
+      ---@cast block docgen.grammar.markdown.pre_block
+      for line in vim.gsplit(block.lines:gsub("\n$", ""), "\n") do
+        table.insert(res, tabs .. line .. "\n")
+      end
+    elseif block.kind == "ul" then
+      ---@cast block docgen.grammar.markdown.ul
+      local marker = tabs .. "- "
+      local sep = block.tight and "\n" or "\n\n"
+      for _, item in ipairs(block.items) do
+        if item.kind == "ul" or item.kind == "ol" then start_indent = start_indent + 1 end
+        table.insert(res, marker .. M.render_markdown(item, start_indent) .. sep)
+      end
     end
   end
 
