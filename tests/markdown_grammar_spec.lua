@@ -8,7 +8,7 @@ local inspect_diff = function(a, b)
     algorithm = "minimal",
   }
   ---@diagnostic disable-next-line: missing-parameter
-  vim.print(vim.diff(vim.inspect(a), vim.inspect(b), opts))
+  return tostring(vim.diff(vim.inspect(a), vim.inspect(b), opts))
 end
 
 ---@param input string
@@ -65,6 +65,25 @@ describe("unordered list", function()
           { { kind = "paragraph", text = "first bullet" } },
         },
         tight = true,
+      },
+    }
+    assert_block(input, expect)
+  end)
+
+  it("one item with 2 paragraphs", function()
+    local input = [[- first paragraph
+
+    second paragraph]]
+    local expect = {
+      {
+        kind = "ul",
+        items = {
+          {
+            { kind = "paragraph", text = "first paragraph" },
+            { kind = "paragraph", text = "second paragraph" },
+          },
+        },
+        tight = false,
       },
     }
     assert_block(input, expect)
@@ -328,6 +347,36 @@ hello world
       { kind = "pre", lines = "hello world\n" },
     }
 
+    assert_block(input, expect)
+  end)
+
+  it("tight nested list with code block", function()
+    local input = [[
+- item 1
+    ```lua
+    print('hello')
+    ```
+    - nested 1
+- item 2
+    ]]
+    local expect = {
+      {
+        kind = "ul",
+        items = {
+          {
+            { kind = "paragraph", text = "item 1" },
+            { kind = "code", lang = "lua", code = "print('hello')\n" },
+            {
+              items = { { { kind = "paragraph", text = "nested 1" } } },
+              kind = "ul",
+              tight = true,
+            },
+          },
+          { { kind = "paragraph", text = "item 2" } },
+        },
+        tight = true,
+      },
+    }
     assert_block(input, expect)
   end)
 end)

@@ -120,7 +120,7 @@ local ol_marker = C(num ^ 3 * num_delim) * #ws
 local list_marker = ul_marker + ol_marker
 
 local list_enders = code_marker + pre_start
-local opt_indented_line = indent ^ -1 / "" * C((line_char - list_enders) ^ 1 * newline ^ -1)
+local opt_indented_line = (indent ^ -1 / "" * C((line_char) ^ 1 * newline ^ -1)) - list_enders
 
 local nested_list = Cs((opt_indented_line - list_marker) ^ 1)
   / function(match)

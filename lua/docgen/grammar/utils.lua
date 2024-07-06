@@ -31,8 +31,11 @@ end
 
 M.It = function(tag)
   return lpeg.P(function(s, i)
+    s = s:sub(i, #s)
     s = s:gsub("\n", "\\n")
-    print(string.format("tag: %s, match: %s, idx: %s", tag, s:sub(i, #s), i))
+    s = s:gsub("\t", "\\t")
+    s = s:gsub(" ", "·")
+    print(string.format("tag: %s, match: '%s', idx: %s", tag, s, i))
     return true
   end)
 end
