@@ -175,6 +175,7 @@ end
 ---@field kind 'ol'
 ---@field items docgen.grammar.markdown.result[]
 ---@field tight boolean
+---@field start number
 
 local tight_ol_items = Ct(tight_list_item(Cb("listtype")) * tight_list_item(ol_marker) ^ 0)
   * Cc(true)

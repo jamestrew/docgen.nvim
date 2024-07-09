@@ -1,5 +1,3 @@
----@diagnostic disable: invisible
-
 local parser = require("docgen.parser")
 local renderer = require("docgen.renderer")
 
@@ -22,17 +20,18 @@ local inspect_diff = function(a, b, md)
     .. vim.inspect(md)
 end
 
-describe("briefs", function()
-  local assert_brief = function(input, expect, indents)
-    input = vim.trim(input) .. "\n"
-    expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
-    indents = indents or 0
-    local _, _, briefs, _ = parser.parse_str(input, "foo.lua")
-    local md = briefs[1]
-    local actual = renderer.render_markdown(md, indents)
-    assert.are.same(expect, actual, inspect_diff(expect, actual, md))
-  end
+local assert_brief = function(input, expect, start_indent)
+  input = vim.trim(input) .. "\n"
+  expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
+  start_indent = start_indent or 0
+  local _, _, briefs, _ = parser.parse_str(input, "foo.lua")
+  local md = briefs[1]
+  local actual = renderer.render_markdown(md, start_indent, 0, 0)
+  assert.are.same(expect, actual, inspect_diff(expect, actual, md))
+  return md
+end
 
+describe("briefs", function()
   describe("paragraphs", function()
     it("single line", function()
       local input = [[---@brief
@@ -109,29 +108,6 @@ Should be new line.
       ]]
       assert_brief(input, expect, 1)
     end)
-
-    it("many paragraphs, 1 indent", function()
-      local input = [[
----@brief
---- Just short of 78 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
----
---- Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
----
---- New paragraph with line break<br><br>Should be new line.
-      ]]
-      local expect = [[
-    Just short of 78 characters
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-
-    Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    BBBBBBBBBB
-
-    New paragraph with line break
-
-    Should be new line.
-      ]]
-      assert_brief(input, expect, 1)
-    end)
   end)
 
   describe("code blocks", function()
@@ -205,7 +181,7 @@ This is useful if you want to draw a table or write some code
     ]]
 
       local expect = [[
-- item 1
+• item 1
     ]]
       assert_brief(input, expect)
     end)
@@ -218,8 +194,8 @@ This is useful if you want to draw a table or write some code
       ]]
 
       local expect = [[
-- item 1
-- item 2
+• item 1
+• item 2
     ]]
       assert_brief(input, expect)
     end)
@@ -233,9 +209,9 @@ This is useful if you want to draw a table or write some code
       ]]
 
       local expect = [[
-- item 1
+• item 1
 
-- item 2
+• item 2
     ]]
       assert_brief(input, expect)
     end)
@@ -248,9 +224,74 @@ This is useful if you want to draw a table or write some code
       ]]
 
       local expect = [[
-- item 1
-    - nested item
+• item 1
+    • nested item
       ]]
+      assert_brief(input, expect)
+    end)
+
+    it("multiple paragraphs in one item", function()
+      local input = [[
+---@brief
+--- - item 1
+---
+---     same item, new paragrah AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
+---
+---     same item, new paragrah AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBBB
+--- - item 2
+      ]]
+
+      local expect = [[
+• item 1
+
+  same item, new paragrah AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
+
+  same item, new paragrah AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+  BBBBBBBBBBB
+
+• item 2
+      ]]
+      assert_brief(input, expect)
+    end)
+
+    it("code block in list", function()
+      local input = [[
+---@brief
+--- - item 1
+---     ```lua
+---     print('hello')
+---     ```
+---     - nested 1
+--- - item 2
+      ]]
+      local expect = [[
+• item 1
+  >lua
+  print('hello')
+  <
+    • nested 1
+• item 2
+      ]]
+      assert_brief(input, expect)
+    end)
+  end)
+
+  describe("ol", function()
+    it("foo", function()
+      local input = [[
+---@brief
+--- 9. item 1
+---     1. nested 1
+---     - nested 2
+--- 1. item 2
+    ]]
+
+      local expect = [[
+9. item 1
+    1. nested 1
+    • nested 2
+10. item 2
+    ]]
       assert_brief(input, expect)
     end)
   end)
