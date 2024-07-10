@@ -20,18 +20,17 @@ local inspect_diff = function(a, b, md)
     .. vim.inspect(md)
 end
 
-local assert_brief = function(input, expect, start_indent)
-  input = vim.trim(input) .. "\n"
-  expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
-  start_indent = start_indent or 0
-  local _, _, briefs, _ = parser.parse_str(input, "foo.lua")
-  local md = briefs[1]
-  local actual = renderer.render_markdown(md, start_indent, 0, 0)
-  assert.are.same(expect, actual, inspect_diff(expect, actual, md))
-  return md
-end
-
 describe("briefs", function()
+  local assert_brief = function(input, expect)
+    input = vim.trim(input) .. "\n"
+    expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
+    local _, _, briefs, _ = parser.parse_str(input, "foo.lua")
+    local md = briefs[1]
+    local actual = renderer.render_briefs(md)
+    assert.are.same(expect, actual, inspect_diff(expect, actual, md))
+    return md
+  end
+
   describe("paragraphs", function()
     it("single line", function()
       local input = [[---@brief
@@ -95,18 +94,6 @@ New paragraph with line break
 Should be new line.
       ]]
       assert_brief(input, expect)
-    end)
-
-    it("one para, 1 indent", function()
-      local input = [[
----@brief
---- Just short of 78 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-      ]]
-      local expect = [[
-    Just short of 78 characters
-    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-      ]]
-      assert_brief(input, expect, 1)
     end)
   end)
 
@@ -277,13 +264,16 @@ This is useful if you want to draw a table or write some code
   end)
 
   describe("ol", function()
-    it("foo", function()
+    it("works", function()
       local input = [[
 ---@brief
 --- 9. item 1
 ---     9. nested 1
 ---     10. nested 2
 ---     - nested 2
+---         ```lua
+---         print('hello')
+---         ```
 --- 10. item 2
     ]]
 
@@ -292,6 +282,9 @@ This is useful if you want to draw a table or write some code
     9.  nested 1
     10. nested 2
     •   nested 2
+        >lua
+        print('hello')
+        <
 10. item 2
     ]]
       assert_brief(input, expect)

@@ -4,14 +4,12 @@ local TEXT_WIDTH = 78
 local TAB_WIDTH = 4
 local TAB = string.rep(" ", TAB_WIDTH)
 
---- comment
 --- @param classes table<string, docgen.luacats.parser.class>
 --- @return string
 M.render_classes = function(classes)
   return ""
 end
 
---- comment
 --- @param funs docgen.luacats.parser.fun[]
 --- @return string
 M.render_funcs = function(funs)
@@ -50,10 +48,11 @@ end
 
 ---@param markdown docgen.grammar.markdown.result[]
 ---@param start_indent integer
----@param list_indent integer
+---@param list_indent integer indentation amount for list child items
+---@param list_marker_size integer? size of list marker including alignment padding minus indentation
 ---@param list_depth integer
 ---@return string
-M.render_markdown = function(markdown, start_indent, list_indent, list_depth)
+M.render_markdown = function(markdown, start_indent, list_indent, list_marker_size, list_depth)
   local res = {} ---@type string[]
   local tabs = string.rep(TAB, start_indent)
 
@@ -74,23 +73,38 @@ M.render_markdown = function(markdown, start_indent, list_indent, list_depth)
         table.insert(res, tabs .. line .. "\n")
       end
     elseif block.kind == "ul" then ---@cast block docgen.grammar.markdown.ul
-      local marker = string.rep(TAB, start_indent + list_depth) .. "• "
+      list_marker_size = list_marker_size or 2 -- len('• ')
+      local marker = "•" .. string.rep(" ", list_marker_size - 1)
+      local indent = string.rep(TAB, start_indent + list_depth)
       local sep = block.tight and "\n" or "\n\n"
       for _, item in ipairs(block.items) do
-        local list_item = M.render_markdown(item, start_indent, list_indent + 2, list_depth + 1)
-        table.insert(res, marker .. list_item .. sep)
+        local list_item = M.render_markdown(
+          item,
+          start_indent,
+          list_indent + list_marker_size,
+          list_marker_size,
+          list_depth + 1
+        )
+        table.insert(res, indent .. marker .. list_item .. sep)
       end
     elseif block.kind == "ol" then ---@cast block docgen.grammar.markdown.ol
+      list_marker_size = list_marker_size or 3 -- len('1. ')
       local marker_ws = string.rep(TAB, start_indent + list_depth)
 
       local max_marker = block.start + #block.items - 1
-      local max_marker_size = #tostring(max_marker) + 1
+      list_marker_size = #tostring(max_marker) + 1 + 1 -- number + dot + space
 
       local sep = block.tight and "\n" or "\n\n"
       for j, item in ipairs(block.items) do
-        local marker = tostring(block.start + j - 1) .. ". "
-        local list_item =
-          M.render_markdown(item, start_indent, list_indent + max_marker_size, list_depth + 1)
+        local marker = tostring(block.start + j - 1) .. "."
+        marker = marker .. string.rep(" ", list_marker_size - #marker)
+        local list_item = M.render_markdown(
+          item,
+          start_indent,
+          list_indent + list_marker_size,
+          list_marker_size,
+          list_depth + 1
+        )
         table.insert(res, marker_ws .. marker .. list_item .. sep)
       end
     end
@@ -99,11 +113,10 @@ M.render_markdown = function(markdown, start_indent, list_indent, list_depth)
   return (table.concat(res):gsub("[ \n]+$", ""))
 end
 
---- comment
 --- @param briefs docgen.grammar.markdown.result[]
 --- @return string
 M.render_briefs = function(briefs)
-  return ""
+  return M.render_markdown(briefs, 0, 0, nil, 0)
 end
 
 return M
