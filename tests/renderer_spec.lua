@@ -288,10 +288,10 @@ This is useful if you want to draw a table or write some code
     ]]
 
       local expect = [[
-9. item 1
-    9. nested 1
+9.  item 1
+    9.  nested 1
     10. nested 2
-    • nested 2
+    •   nested 2
 10. item 2
     ]]
       assert_brief(input, expect)
