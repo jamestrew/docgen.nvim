@@ -14,7 +14,7 @@ end
 --- comment
 --- @param funs docgen.luacats.parser.fun[]
 --- @return string
-M.render_funs = function(funs)
+M.render_funcs = function(funs)
   return ""
 end
 
@@ -82,11 +82,15 @@ M.render_markdown = function(markdown, start_indent, list_indent, list_depth)
       end
     elseif block.kind == "ol" then ---@cast block docgen.grammar.markdown.ol
       local marker_ws = string.rep(TAB, start_indent + list_depth)
+
+      local max_marker = block.start + #block.items - 1
+      local max_marker_size = #tostring(max_marker) + 1
+
       local sep = block.tight and "\n" or "\n\n"
       for j, item in ipairs(block.items) do
         local marker = tostring(block.start + j - 1) .. ". "
         local list_item =
-          M.render_markdown(item, start_indent, list_indent + #marker, list_depth + 1)
+          M.render_markdown(item, start_indent, list_indent + max_marker_size, list_depth + 1)
         table.insert(res, marker_ws .. marker .. list_item .. sep)
       end
     end
