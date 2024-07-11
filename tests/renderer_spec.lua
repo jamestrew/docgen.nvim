@@ -1,5 +1,6 @@
 local parser = require("docgen.parser")
 local renderer = require("docgen.renderer")
+local parse_md = require("docgen.grammar.markdown").parse_markdown
 
 local function string_literal(str)
   str = string.gsub(str, "\n", "\\n")
@@ -25,8 +26,8 @@ describe("briefs", function()
     input = vim.trim(input) .. "\n"
     expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
     local _, _, briefs, _ = parser.parse_str(input, "foo.lua")
-    local md = briefs[1]
-    local actual = renderer.render_briefs(md)
+    local actual = renderer.render_briefs(briefs)
+    local md = parse_md(briefs[1])
     assert.are.same(expect, actual, inspect_diff(expect, actual, md))
     return md
   end

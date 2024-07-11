@@ -1,3 +1,5 @@
+local parse_md = require("docgen.grammar.markdown").parse_markdown
+
 local M = {}
 
 local TEXT_WIDTH = 78
@@ -113,10 +115,15 @@ M.render_markdown = function(markdown, start_indent, list_indent, list_marker_si
   return (table.concat(res):gsub("[ \n]+$", ""))
 end
 
---- @param briefs docgen.grammar.markdown.result[]
---- @return string
+---@param briefs string[]
+---@return string
 M.render_briefs = function(briefs)
-  return M.render_markdown(briefs, 0, 0, nil, 0)
+  local res = {}
+  for _, brief in ipairs(briefs) do
+    local md = parse_md(brief)
+    table.insert(res, M.render_markdown(md, 0, 0, nil, 0))
+  end
+  return table.concat(res)
 end
 
 return M

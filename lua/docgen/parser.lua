@@ -390,7 +390,7 @@ end
 --- @param obj docgen.luacats.parser.obj
 --- @param funs docgen.luacats.parser.fun[]
 --- @param classes table<string,docgen.luacats.parser.class>
---- @param briefs docgen.grammar.markdown.result[]
+--- @param briefs string[]
 --- @param uncommitted docgen.luacats.parser.obj[]
 local function commit_obj(obj, classes, funs, briefs, uncommitted)
   local commit = false
@@ -405,7 +405,7 @@ local function commit_obj(obj, classes, funs, briefs, uncommitted)
     commit = true
   elseif obj.kind == "brief" then
     --- @cast obj docgen.luacats.parser.brief`
-    briefs[#briefs + 1] = markdown_grammar.parse_markdown(obj.desc)
+    briefs[#briefs + 1] = obj.desc
     commit = true
   else
     --- @cast obj docgen.luacats.parser.fun`
@@ -447,7 +447,7 @@ local M = {}
 ---@param filename string
 ---@return table<string, docgen.luacats.parser.class>
 ---@return docgen.luacats.parser.fun[]
----@return docgen.grammar.markdown.result[]
+---@return string[]
 ---@return docgen.luacats.parser.alias|docgen.luacats.parser.brief|docgen.luacats.parser.class|docgen.luacats.parser.fun[]
 function M.parse_str(str, filename)
   local funs = {} --- @type docgen.luacats.parser.fun[]
