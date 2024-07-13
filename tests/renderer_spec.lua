@@ -298,7 +298,7 @@ describe("functions", function()
     input = string.format("local M = {}\n%s\nreturn M\n", input)
     expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
     local classes, funs, _, _ = parser.parse_str(input, "foo.lua")
-    local actual = vim.trim(renderer.render_funs(funs, classes))
+    local actual = renderer.render_funs(funs, classes):gsub("[ \n]+$", "")
     assert.are.same(
       expect,
       actual,
@@ -340,6 +340,77 @@ foo({x}, {y})                                                  *foo.lua.foo()*
       • foobar
 ]]
 
+    assert_funs(input, expect)
+  end)
+
+  it("no doc", function()
+    local fun = [[
+---@param x string some string to append to 'foo'
+---@param y string another string to append to 'foo'
+---@return string x the string 'foo' appended with 'x'
+M.foo = function(x, y) return 'foo' + x end
+
+---@param a integer
+---@return integer
+M._bar = function(a) return a end
+    ]]
+
+    local inputs = {
+      "---@nodoc",
+      "---@package",
+    }
+
+    for _, tinput in ipairs(inputs) do
+      local input = string.format("%s\n%s", tinput, fun)
+      assert_funs(input, "")
+    end
+  end)
+
+  it("class method", function()
+    local input = [[
+---@class M
+---@field bar string
+local M = {
+  bar = "hello"
+}
+
+--- hello
+---@return M
+function M:new()
+  return setmetatable({}, { __index = {} })
+end
+    ]]
+
+    local expect = [[
+M:new()                                                              *M:new()*
+    hello
+
+    Return: ~
+        (`M`) See |M|
+    ]]
+    assert_funs(input, expect)
+  end)
+
+  it("long function", function()
+    local input = [[
+--- hello
+---@param some_param string
+---@return integer # just 42
+M.this_is_a_really_long_function_name_that_should_be_wrapped = function(some_param)
+  return 42
+end
+    ]]
+    local expect = [[
+        *foo.lua.this_is_a_really_long_function_name_that_should_be_wrapped()*
+this_is_a_really_long_function_name_that_should_be_wrapped({some_param})
+    hello
+
+    Parameters: ~
+      • {some_param}  (`string`)
+
+    Return: ~
+        (`integer`) just 42
+    ]]
     assert_funs(input, expect)
   end)
 end)

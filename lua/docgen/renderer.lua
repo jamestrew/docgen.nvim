@@ -188,10 +188,12 @@ local function render_fields_or_params(objs, generics, classes)
           vim.list_extend(res, { " ", pty, "\n" })
           local desc_md = parse_md(desc)
           table.insert(res, M.render_markdown(desc_md, indent_offset, indent_offset, nil, 0))
+          table.insert(res, "\n")
         else
           desc = string.format("%s %s", pty, desc)
           local desc_md = parse_md(desc)
           table.insert(res, M.render_markdown(desc_md, 1, indent_offset, nil, 0))
+          table.insert(res, "\n")
         end
       else
         table.insert(res, string.format("%s %s\n", pname, pty))
@@ -201,10 +203,9 @@ local function render_fields_or_params(objs, generics, classes)
         local desc_md = parse_md(desc)
         table.insert(res, pname)
         table.insert(res, M.render_markdown(desc_md, 1, indent_offset, nil, 0))
+        table.insert(res, "\n")
       end
     end
-
-    table.insert(res, "\n")
   end
 
   return table.concat(res)
@@ -222,7 +223,7 @@ local function render_fun_header(fun)
   local res = {}
 
   local params = {}
-  for _, param in ipairs(fun.params) do
+  for _, param in ipairs(fun.params or {}) do
     if param.name ~= "self" then table.insert(params, format_field_name(param.name)) end
   end
 
@@ -240,10 +241,11 @@ local function render_fun_header(fun)
 
   local header_width = #proto + #tag
   if header_width > TEXT_WIDTH - (TAB_WIDTH * 2) then
+    print("proto", proto)
     table.insert(res, string.format("%" .. TEXT_WIDTH .. "s\n", tag))
     local nm, pargs = proto:match("([^(]+%()(.*)") -- `fn_name(` and `arg1, arg2, ...)`
-    table.insert(ret, nm)
-    table.insert(ret, text_wrap(pargs, 0, #nm))
+    table.insert(res, nm)
+    table.insert(res, text_wrap(pargs, 0, #nm))
   else
     local pad = TEXT_WIDTH - header_width
     table.insert(res, string.format("%s%s%s", proto, string.rep(" ", pad), tag))
@@ -309,6 +311,7 @@ local function render_fun(fun, classes)
     local param_text = render_fields_or_params(fun.params, fun.generics, classes)
     if not param_text:match("^%s*$") then
       table.insert(res, string.format("%sParameters: ~\n", TAB))
+      print("param_text", string_literal(param_text))
       table.insert(res, param_text)
       table.insert(res, "\n")
     end
