@@ -186,13 +186,11 @@ local function render_fields_or_params(objs, generics, classes)
         table.insert(res, pname)
         if #pty > TEXT_WIDTH - indent then
           vim.list_extend(res, { " ", pty, "\n" })
-          local desc_md = parse_md(desc)
-          table.insert(res, M.render_markdown(desc_md, indent_offset, indent_offset, nil, 0))
+          table.insert(res, M.render_markdown(desc, indent_offset, indent_offset, nil, 0))
           table.insert(res, "\n")
         else
           desc = string.format("%s %s", pty, desc)
-          local desc_md = parse_md(desc)
-          table.insert(res, M.render_markdown(desc_md, 1, indent_offset, nil, 0))
+          table.insert(res, M.render_markdown(desc, 1, indent_offset, nil, 0))
           table.insert(res, "\n")
         end
       else
@@ -200,9 +198,8 @@ local function render_fields_or_params(objs, generics, classes)
       end
     else
       if desc then
-        local desc_md = parse_md(desc)
         table.insert(res, pname)
-        table.insert(res, M.render_markdown(desc_md, 1, indent_offset, nil, 0))
+        table.insert(res, M.render_markdown(desc, 1, indent_offset, nil, 0))
         table.insert(res, "\n")
       end
     end
@@ -268,8 +265,7 @@ local function render_fun_returns(returns, generics, classes)
     table.insert(blk, ret.desc or "")
 
     local offset = TAB_WIDTH * 2
-    local md = parse_md(table.concat(blk, " "))
-    table.insert(res, M.render_markdown(md, offset, offset, nil, 0))
+    table.insert(res, M.render_markdown(table.concat(blk, " "), offset, offset, nil, 0))
     table.insert(res, "\n")
   end
 
@@ -290,18 +286,16 @@ local function render_fun(fun, classes)
   table.insert(res, "\n")
 
   if fun.desc then
-    local md = parse_md(fun.desc)
-    table.insert(res, M.render_markdown(md, TAB_WIDTH, TAB_WIDTH, nil, 0))
+    table.insert(res, M.render_markdown(fun.desc, TAB_WIDTH, TAB_WIDTH, nil, 0))
     table.insert(res, "\n\n")
   end
 
   if fun.notes then
     table.insert(res, string.format("%sNote: ~\n", TAB))
     for _, note in ipairs(fun.notes) do
-      local md = parse_md(note.desc)
       table.insert(
         res,
-        string.format("%s  • %s", TAB, M.render_markdown(md, 0, bullet_offset, nil, 0))
+        string.format("%s  • %s", TAB, M.render_markdown(note.desc, 0, bullet_offset, nil, 0))
       )
       table.insert(res, "\n")
     end
@@ -333,10 +327,9 @@ local function render_fun(fun, classes)
   if fun.see and #fun.see > 0 then
     table.insert(res, string.format("%sSee also: ~\n", TAB))
     for _, s in ipairs(fun.see) do
-      local md = parse_md(s.desc)
       table.insert(
         res,
-        string.format("%s  • %s\n", TAB, M.render_markdown(md, 0, bullet_offset, nil, 0))
+        string.format("%s  • %s\n", TAB, M.render_markdown(s.desc, 0, bullet_offset, nil, 0))
       )
       table.insert(res, "\n")
     end
@@ -386,7 +379,7 @@ local function render_ul(ul, lines, start_indent, indent, list_marker_size, list
   local marker = "•" .. string.rep(" ", list_marker_size - 1)
   local sep = ul.tight and "\n" or "\n\n"
   for _, item in ipairs(ul.items) do
-    local list_item = M.render_markdown(
+    local list_item = M._render_markdown(
       item,
       start_indent + list_marker_size,
       indent + list_marker_size,
@@ -414,7 +407,7 @@ local function render_ol(ol, lines, start_indent, indent, list_marker_size, list
   for i, item in ipairs(ol.items) do
     local marker = tostring(ol.start + i - 1) .. "."
     marker = marker .. string.rep(" ", list_marker_size - #marker)
-    local list_item = M.render_markdown(
+    local list_item = M._render_markdown(
       item,
       start_indent + list_marker_size,
       indent + list_marker_size,
@@ -431,7 +424,7 @@ end
 ---@param list_marker_size integer? size of list marker including alignment padding minus indentation
 ---@param list_depth integer current list depth
 ---@return string
-M.render_markdown = function(markdown, start_indent, indent, list_marker_size, list_depth)
+M._render_markdown = function(markdown, start_indent, indent, list_marker_size, list_depth)
   local res = {} ---@type string[]
   local tabs = string.rep(" ", start_indent)
 
@@ -460,13 +453,23 @@ M.render_markdown = function(markdown, start_indent, indent, list_marker_size, l
   return (table.concat(res):gsub("[ \n]+$", ""))
 end
 
+---@param markdown string
+---@param start_indent integer indentation amount for the first line
+---@param indent integer indentation amount for list child items
+---@param list_marker_size integer? size of list marker including alignment padding minus indentation
+---@param list_depth integer current list depth
+---@return string
+M.render_markdown = function(markdown, start_indent, indent, list_marker_size, list_depth)
+  local md = parse_md(markdown)
+  return M._render_markdown(md, start_indent, indent, list_marker_size, list_depth)
+end
+
 ---@param briefs string[]
 ---@return string
 M.render_briefs = function(briefs)
   local res = {}
   for _, brief in ipairs(briefs) do
-    local md = parse_md(brief)
-    table.insert(res, M.render_markdown(md, 0, 0, nil, 0))
+    table.insert(res, M.render_markdown(brief, 0, 0, nil, 0))
   end
   return table.concat(res)
 end
