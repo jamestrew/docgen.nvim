@@ -3,13 +3,13 @@ local renderer = require("docgen.renderer")
 local parse_md = require("docgen.grammar.markdown").parse_markdown
 
 local function string_literal(str)
-  str = string.gsub(str, "\n", "\\n")
-  str = string.gsub(str, "\t", "\\t")
+  -- str = string.gsub(str, "\n", "\\n")
+  -- str = string.gsub(str, "\t", "\\t")
   str = string.gsub(str, " ", "·")
   return str
 end
 
-local inspect_diff = function(a, b, md)
+local inspect_diff = function(a, b, other)
   local opts = {
     ctxlen = 10,
     algorithm = "minimal",
@@ -18,7 +18,7 @@ local inspect_diff = function(a, b, md)
   return "expected-actual\n"
     .. tostring(vim.diff(string_literal(a), string_literal(b), opts))
     .. "\n"
-    .. vim.inspect(md)
+    .. vim.inspect(other)
 end
 
 describe("briefs", function()
@@ -290,5 +290,56 @@ This is useful if you want to draw a table or write some code
     ]]
       assert_brief(input, expect)
     end)
+  end)
+end)
+
+describe("functions", function()
+  local assert_funs = function(input, expect)
+    input = string.format("local M = {}\n%s\nreturn M\n", input)
+    expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
+    local classes, funs, _, _ = parser.parse_str(input, "foo.lua")
+    local actual = vim.trim(renderer.render_funs(funs, classes))
+    assert.are.same(
+      expect,
+      actual,
+      inspect_diff(expect, actual, { classes = classes, funs = funs })
+    )
+  end
+
+  it("basic", function()
+    local input = [[
+--- Append `x` to 'foo'
+---@note this is a note
+---@param x string some string to append to 'foo'
+---@param y string another string to append to 'foo'
+---
+--- another paragraph for the `y` parameter. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBB
+---@return string x the string 'foo' appended with 'x'
+---@see foobar
+M.foo = function(x, y) return 'foo' + x end
+    ]]
+
+    local expect = [[
+foo({x}, {y})                                                  *foo.lua.foo()*
+    Append `x` to 'foo'
+
+    Note: ~
+      • this is a note
+
+    Parameters: ~
+      • {x}  (`string`) some string to append to 'foo'
+      • {y}  (`string`) another string to append to 'foo'
+
+             another paragraph for the `y` parameter.
+             AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBB
+
+    Return: ~
+        (`string`) the string 'foo' appended with 'x'
+
+    See also: ~
+      • foobar
+]]
+
+    assert_funs(input, expect)
   end)
 end)

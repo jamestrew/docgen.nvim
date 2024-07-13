@@ -1,5 +1,4 @@
 local luacats_grammar = require("docgen.grammar.luacats")
-local markdown_grammar = require("docgen.grammar.markdown")
 
 --- @class docgen.luacats.parser.param
 --- @field name string
@@ -34,8 +33,8 @@ local markdown_grammar = require("docgen.grammar.markdown")
 --- @field modvar? string
 --- @field classvar? string
 --- @field deprecated? true
---- @field since? string
---- @field attrs? string[]
+--- @field since? string -- need?
+--- @field attrs? string[] -- need?
 --- @field nodoc? true
 --- @field generics? table<string,string>
 --- @field table? true
@@ -327,7 +326,7 @@ local function process_lua_line(line, state, classes, classvars, has_indent)
     local parent_tbl, tbl_nm = line:match("([a-zA-Z_]+)%.([a-zA-Z0-9_]+)%s*=")
     if state.cur_obj and parent_tbl and parent_tbl == state.cur_obj.modvar then
       state.cur_obj.name = tbl_nm
-      state.cur_obj.table = true
+      -- state.cur_obj.table = true -- jt: not sure about enforcing this
       return
     end
   end
@@ -337,16 +336,6 @@ local function process_lua_line(line, state, classes, classvars, has_indent)
     local tbl_nm = line:match("^([a-zA-Z0-9_]+)%s*=")
     if tbl_nm and not has_indent then
       state.cur_obj = state.cur_obj or {}
-      state.cur_obj.name = tbl_nm
-      state.cur_obj.table = true
-      return
-    end
-  end
-
-  do
-    -- Handle: `vim.foo = {...}`
-    local tbl_nm = line:match("^(vim%.[a-zA-Z0-9_]+)%s*=")
-    if state.cur_obj and tbl_nm and not has_indent then
       state.cur_obj.name = tbl_nm
       state.cur_obj.table = true
       return
