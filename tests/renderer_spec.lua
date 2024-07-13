@@ -413,4 +413,32 @@ this_is_a_really_long_function_name_that_should_be_wrapped({some_param})
     ]]
     assert_funs(input, expect)
   end)
+
+  it("funky params, returns", function()
+    local input = [[
+--- hello
+---@param ... string some strings
+---@return boolean enabled
+---@return boolean|nil error if something errored
+---@return string ... some return strings
+function M.funky_params(...)
+  return true, nil, "foo", "bar"
+end
+    ]]
+
+    local expect = [[
+funky_params({...})                                   *foo.lua.funky_params()*
+    hello
+
+    Parameters: ~
+      • {...}  (`string`) some strings
+
+    Return (multiple): ~
+        (`boolean`)
+        (`boolean?`) if something errored
+        (`string`) some return strings
+    ]]
+
+    assert_funs(input, expect)
+  end)
 end)

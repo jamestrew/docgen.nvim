@@ -103,7 +103,7 @@ local grammar = P({
   rep1(P("@") * (v.ats + v.ext_ats)),
 
   ats = annot("param", Cg(lname, "name") * ws * v.ctype * opt_desc)
-    + annot("return", comma1(Ct(v.ctype * opt(ws * cname))) * opt_desc)
+    + annot("return", comma1(Ct(v.ctype * opt(ws * (cname + Cg(P("..."), "name"))))) * opt_desc)
     + annot("type", comma1(Ct(v.ctype)) * opt_desc)
     + annot("cast", cname * ws * opt(Sf("+-")) * v.ctype)
     + annot("generic", cname * opt(colon * v.ctype))

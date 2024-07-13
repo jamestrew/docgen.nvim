@@ -241,7 +241,6 @@ local function render_fun_header(fun)
 
   local header_width = #proto + #tag
   if header_width > TEXT_WIDTH - (TAB_WIDTH * 2) then
-    print("proto", proto)
     table.insert(res, string.format("%" .. TEXT_WIDTH .. "s\n", tag))
     local nm, pargs = proto:match("([^(]+%()(.*)") -- `fn_name(` and `arg1, arg2, ...)`
     table.insert(res, nm)
@@ -271,6 +270,7 @@ local function render_fun_returns(returns, generics, classes)
     local offset = TAB_WIDTH * 2
     local md = parse_md(table.concat(blk, " "))
     table.insert(res, M.render_markdown(md, offset, offset, nil, 0))
+    table.insert(res, "\n")
   end
 
   return table.concat(res)
@@ -303,15 +303,15 @@ local function render_fun(fun, classes)
         res,
         string.format("%s  • %s", TAB, M.render_markdown(md, 0, bullet_offset, nil, 0))
       )
+      table.insert(res, "\n")
     end
-    table.insert(res, "\n\n")
+    table.insert(res, "\n")
   end
 
   if fun.params and #fun.params > 0 then
     local param_text = render_fields_or_params(fun.params, fun.generics, classes)
     if not param_text:match("^%s*$") then
       table.insert(res, string.format("%sParameters: ~\n", TAB))
-      print("param_text", string_literal(param_text))
       table.insert(res, param_text)
       table.insert(res, "\n")
     end
@@ -326,7 +326,7 @@ local function render_fun(fun, classes)
     end
     if not return_text:match("^%s*$") then
       table.insert(res, return_text)
-      table.insert(res, "\n\n")
+      table.insert(res, "\n")
     end
   end
 
@@ -338,8 +338,9 @@ local function render_fun(fun, classes)
         res,
         string.format("%s  • %s\n", TAB, M.render_markdown(md, 0, bullet_offset, nil, 0))
       )
+      table.insert(res, "\n")
     end
-    table.insert(res, "\n\n")
+    table.insert(res, "\n")
   end
 
   return table.concat(res)

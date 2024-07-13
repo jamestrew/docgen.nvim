@@ -144,6 +144,15 @@ describe("returns", function()
     },
     desc = "the command and arguments",
   })
+
+  test("@return string ... some strings", {
+    kind = "return",
+    {
+      name = "...",
+      type = "string",
+    },
+    desc = "some strings",
+  })
 end)
 
 describe("fields", function()
