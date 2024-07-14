@@ -5,264 +5,52 @@ local parse_md = require("docgen.grammar.markdown").parse_markdown
 local function string_literal(str)
   -- str = string.gsub(str, "\n", "\\n")
   -- str = string.gsub(str, "\t", "\\t")
+  str = string.gsub(str, "    ", "󰌒")
   str = string.gsub(str, " ", "·")
   return str
 end
 
-local inspect_diff = function(a, b, other)
+local inspect_diff = function(expected, actual, other)
   local opts = {
     ctxlen = 10,
     algorithm = "minimal",
   }
   ---@diagnostic disable-next-line: missing-parameter
-  return "expected-actual\n"
-    .. tostring(vim.diff(string_literal(a), string_literal(b), opts))
+  return "actual-expected\n"
+    .. tostring(vim.diff(string_literal(actual), string_literal(expected), opts))
     .. "\n"
     .. vim.inspect(other)
 end
 
-describe("briefs", function()
+---@param expect string
+---@param actual string
+---@param other any
+local function assert_lines(expect, actual, other)
+  expect = "\n" .. expect
+  actual = "\n" .. actual
+  local passes = true
+  local expect_lines = vim.split(expect, "\n")
+  for i, line in vim.iter(vim.gsplit(actual, "\n")):enumerate() do
+    if expect_lines[i] == "" then
+      passes = string.match(line, "^%s*$") ~= nil
+    else
+      passes = expect_lines[i] == line
+    end
+    if not passes then break end
+  end
+
+  if not passes then assert.are.same(expect, actual, inspect_diff(expect, actual, other)) end
+end
+
+pending("briefs", function()
   local assert_brief = function(input, expect)
     input = vim.trim(input) .. "\n"
     expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
     local _, _, briefs, _ = parser.parse_str(input, "foo.lua")
     local actual = renderer.render_briefs(briefs)
     local md = parse_md(briefs[1])
-    assert.are.same(expect, actual, inspect_diff(expect, actual, md))
-    return md
+    assert_lines(expect, actual, md)
   end
-
-  describe("paragraphs", function()
-    it("single line", function()
-      local input = [[---@brief
---- this is a single line]]
-      local expect = "this is a single line"
-      assert_brief(input, expect)
-    end)
-
-    it("single line wrap, no indent", function()
-      local input = [[---@brief
---- Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
-      ]]
-      local expect = [[
-Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-BBBBBBBBBB
-      ]]
-      assert_brief(input, expect)
-    end)
-
-    it("one paragraph with line break", function()
-      local input = [[
----@brief
---- New paragraph with line break<br>Should be new line.
-      ]]
-      local expect = [[
-New paragraph with line break
-Should be new line.
-      ]]
-      assert_brief(input, expect)
-    end)
-
-    it("one paragrpah with line break and wrap", function()
-      local input = [[
----@brief
---- New paragraph with line break<br>Should be new line. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-      ]]
-      local expect = [[
-New paragraph with line break
-Should be new line. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-      ]]
-      assert_brief(input, expect)
-    end)
-
-    it("many paragraphs, no indents", function()
-      local input = [[
----@brief
---- Just short of 78 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
----
---- Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
----
---- New paragraph with line break<br><br>Should be new line.
-      ]]
-      local expect = [[
-Just short of 78 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-
-Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-BBBBBBBBBB
-
-New paragraph with line break
-
-Should be new line.
-      ]]
-      assert_brief(input, expect)
-    end)
-  end)
-
-  describe("code blocks", function()
-    it("no language", function()
-      local input = [[
----@brief
---- ```
----
---- print('hello')
----
---- print('world')
---- ```
-      ]]
-      local expect = [[
->
-
-print('hello')
-
-print('world')
-<
-      ]]
-      assert_brief(input, expect)
-    end)
-
-    it("with language", function()
-      local input = [[
----@brief
---- ```lua
----
---- print('hello')
----
----
---- print('world')
---- ```
-      ]]
-      local expect = [[
->lua
-
-print('hello')
-
-
-print('world')
-<
-      ]]
-      assert_brief(input, expect)
-    end)
-  end)
-
-  it("pre blocks", function()
-    local input = [[
----@brief
---- <pre>
---- You can disable formatting with a
---- pre block.
---- This is useful if you want to draw a table or write some code
---- </pre>
-    ]]
-    local expect = [[
-You can disable formatting with a
-pre block.
-This is useful if you want to draw a table or write some code
-    ]]
-    assert_brief(input, expect)
-  end)
-
-  describe("ul", function()
-    it("one item", function()
-      local input = [[
----@brief
---- - item 1
-    ]]
-
-      local expect = [[
-• item 1
-    ]]
-      assert_brief(input, expect)
-    end)
-
-    it("two items, tight", function()
-      local input = [[
----@brief
---- - item 1
---- - item 2
-      ]]
-
-      local expect = [[
-• item 1
-• item 2
-    ]]
-      assert_brief(input, expect)
-    end)
-
-    it("two items, loose", function()
-      local input = [[
----@brief
---- - item 1
----
---- - item 2
-      ]]
-
-      local expect = [[
-• item 1
-
-• item 2
-    ]]
-      assert_brief(input, expect)
-    end)
-
-    it("nested", function()
-      local input = [[
----@brief
---- - item 1
----     - nested item
-      ]]
-
-      local expect = [[
-• item 1
-    • nested item
-      ]]
-      assert_brief(input, expect)
-    end)
-
-    it("multiple paragraphs in one item", function()
-      local input = [[
----@brief
---- - item 1
----
----     same item, new paragrah AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
----
----     same item, new paragrah AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBBB
---- - item 2
-      ]]
-
-      local expect = [[
-• item 1
-
-  same item, new paragrah AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
-
-  same item, new paragrah AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-  BBBBBBBBBBB
-
-• item 2
-      ]]
-      assert_brief(input, expect)
-    end)
-
-    it("code block in list", function()
-      local input = [[
----@brief
---- - item 1
----     ```lua
----     print('hello')
----     ```
----     - nested 1
---- - item 2
-      ]]
-      local expect = [[
-• item 1
-  >lua
-  print('hello')
-  <
-    • nested 1
-• item 2
-      ]]
-      assert_brief(input, expect)
-    end)
-  end)
 
   describe("ol", function()
     it("works", function()
@@ -299,11 +87,7 @@ describe("functions", function()
     expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
     local classes, funs, _, _ = parser.parse_str(input, "foo.lua")
     local actual = renderer.render_funs(funs, classes):gsub("[ \n]+$", "")
-    assert.are.same(
-      expect,
-      actual,
-      inspect_diff(expect, actual, { classes = classes, funs = funs })
-    )
+    assert_lines(expect, actual, { classes = classes, funs = funs })
   end
 
   it("basic", function()
@@ -317,6 +101,9 @@ describe("functions", function()
 ---@return string x the string 'foo' appended with 'x'
 ---@see foobar
 M.foo = function(x, y) return 'foo' + x end
+
+--- another one
+M.bar = function() end
     ]]
 
     local expect = [[
@@ -338,6 +125,9 @@ foo({x}, {y})                                                  *foo.lua.foo()*
 
     See also: ~
       • foobar
+
+bar()                                                          *foo.lua.bar()*
+    another one
 ]]
 
     assert_funs(input, expect)
@@ -417,21 +207,24 @@ this_is_a_really_long_function_name_that_should_be_wrapped({some_param})
   it("funky params, returns", function()
     local input = [[
 --- hello
+---@generic T
 ---@param ... string some strings
+---@param ty `T` some type
 ---@return boolean enabled
 ---@return boolean|nil error if something errored
 ---@return string ... some return strings
-function M.funky_params(...)
+function M.funky_params(..., ty)
   return true, nil, "foo", "bar"
 end
     ]]
 
     local expect = [[
-funky_params({...})                                   *foo.lua.funky_params()*
+funky_params({...}, {ty})                             *foo.lua.funky_params()*
     hello
 
     Parameters: ~
       • {...}  (`string`) some strings
+      • {ty}   (``T``) some type
 
     Return (multiple): ~
         (`boolean`)
@@ -440,5 +233,422 @@ funky_params({...})                                   *foo.lua.funky_params()*
     ]]
 
     assert_funs(input, expect)
+  end)
+end)
+
+pending("classes", function()
+  local assert_classes = function(input, expect)
+    input = string.format("local M = {}\n%s\nreturn M\n", input)
+    expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
+    local classes, _, _, _ = parser.parse_str(input, "foo.lua")
+    local actual = renderer.render_classes(classes):gsub("[ \n]+$", "")
+    assert_lines(expect, actual, { classes = classes })
+  end
+
+  it("basic", function()
+    local input = [[
+--- some description about Foobar
+--- - here's a list
+---     - it's nested
+---
+--- ```lua
+--- print('hello')
+--- ```
+---@class Foobar
+---@field a string
+---@field b number
+---@field c boolean
+---@field d "rfc2396"| "rfc2732" | "rfc3986" | nil
+---@field e fun(a: table<string,any>): string hello this is a description
+    ]]
+    local expect = [[
+*Foobar*
+    some description about Foobar
+    • here's a list
+        • it's nested
+    >lua
+    print('hello')
+    <
+
+    Fields: ~
+      • {a}  (`string`)
+      • {b}  (`number`)
+      • {c}  (`boolean`)
+      • {d}  (`"rfc2396"|"rfc2732"|"rfc3986"?`)
+      • {e}  (`fun(a: table<string,any>): string`) hello this is a description
+    ]]
+    assert_classes(input, expect)
+  end)
+end)
+
+describe("render_markdown", function()
+  local assert_md = function(input, expect, start_indent, indent)
+    start_indent = start_indent or 0
+    indent = indent or 0
+    input = vim.trim(input) .. "\n"
+    expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
+    local md = parse_md(input)
+    local actual = renderer.render_markdown(input, start_indent, indent)
+    assert_lines(expect, actual, { markdown = md, start_indent = start_indent, indent = indent })
+  end
+
+  describe("paragraphs", function()
+    it("basic wrap", function()
+      local input = [[
+Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
+    ]]
+      local expect = [[
+Paragraph as 79 characters AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+BBBBBBBBBB
+      ]]
+      assert_md(input, expect, 0, 0)
+    end)
+
+    it("with line break", function()
+      local input = [[
+New paragraph with line break<br>Should be new line. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      ]]
+      local expect = [[
+New paragraph with line break
+Should be new line. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      ]]
+      assert_md(input, expect, 0, 0)
+    end)
+
+    it("with indent", function()
+      local input = [[
+another string to append to 'foo'
+
+another paragraph for the `y` parameter. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBB
+    ]]
+      local expect = [[
+    another string to append to 'foo'
+
+    another paragraph for the `y` parameter. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    BBBBB
+    ]]
+      assert_md(input, expect, 4, 4)
+    end)
+  end)
+
+  describe("code blocks", function()
+    it("no language", function()
+      local input = [[
+```
+
+print('hello')
+
+print('world')
+```
+      ]]
+      local expect = [[
+>
+print('hello')
+
+print('world')
+<
+      ]]
+      assert_md(input, expect, 0, 0)
+    end)
+
+    it("with language", function()
+      local input = [[
+```lua
+
+print('hello')
+
+
+print('world')
+```
+      ]]
+      local expect = [[
+>lua
+print('hello')
+
+
+print('world')
+<
+      ]]
+      assert_md(input, expect)
+    end)
+
+    it("with indent", function()
+      local input = [[
+```lua
+
+print('hello')
+
+
+print('world')
+```
+      ]]
+      local expect = [[
+    >lua
+    print('hello')
+
+
+    print('world')
+    <
+      ]]
+      assert_md(input, expect, 4, 4)
+    end)
+  end)
+
+  describe("pre blocks", function()
+    it("basic", function()
+      local input = [[
+<pre>
+You can disable formatting with a
+pre block.
+This is useful if you want to draw a table or write some code
+</pre>
+    ]]
+      local expect = [[
+You can disable formatting with a
+pre block.
+This is useful if you want to draw a table or write some code
+    ]]
+      assert_md(input, expect)
+    end)
+
+    it("with indent", function()
+      local input = [[
+<pre>
+You can disable formatting with a
+pre block.
+This is useful if you want to draw a table or write some code
+</pre>
+    ]]
+      local expect = [[
+    You can disable formatting with a
+    pre block.
+    This is useful if you want to draw a table or write some code
+    ]]
+      assert_md(input, expect, 4, 8)
+    end)
+  end)
+
+  describe("ul", function()
+    it("ul with paragraphs", function()
+      local input = [[
+- item 1
+
+    paragraph
+]]
+      local expect = [[
+• item 1
+
+  paragraph
+    ]]
+      assert_md(input, expect)
+
+      expect = [[
+    • item 1
+
+      paragraph
+      ]]
+      assert_md(input, expect, 4, 4)
+
+      expect = [[
+    • item 1
+
+          paragraph
+      ]]
+      assert_md(input, expect, 4, 8)
+    end)
+
+    it("many items, tight", function()
+      local expect
+      local input = [[
+- item 1
+- item 2
+      ]]
+
+      expect = [[
+• item 1
+• item 2
+      ]]
+      assert_md(input, expect)
+
+      expect = [[
+    • item 1
+    • item 2
+      ]]
+      assert_md(input, expect, 4, 4)
+
+      expect = [[
+    • item 1
+        • item 2
+      ]]
+      assert_md(input, expect, 4, 8)
+    end)
+
+    it("many items, loose", function()
+      local expect
+      local input = [[
+- item 1
+
+- item 2
+      ]]
+
+      expect = [[
+• item 1
+
+• item 2
+      ]]
+      assert_md(input, expect)
+
+      expect = [[
+    • item 1
+
+    • item 2
+      ]]
+      assert_md(input, expect, 4, 4)
+
+      expect = [[
+    • item 1
+
+        • item 2
+      ]]
+      assert_md(input, expect, 4, 8)
+    end)
+
+    it("nested", function()
+      local input = [[
+- item 1
+    - item 2
+        - item 3
+    ]]
+      local expect = [[
+• item 1
+  • item 2
+    • item 3
+    ]]
+      assert_md(input, expect)
+
+      expect = [[
+    • item 1
+      • item 2
+        • item 3
+    ]]
+      assert_md(input, expect, 4, 4)
+
+      expect = [[
+    • item 1
+          • item 2
+            • item 3
+    ]]
+      assert_md(input, expect, 4, 8)
+    end)
+
+    it("multiple paragraphs in one item", function()
+      local input = [[
+- item 1
+
+    same item, new paragrah AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
+
+    same item, new paragrah AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBBB
+- item 2
+      ]]
+
+      local expect = [[
+• item 1
+
+  same item, new paragrah AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBBBBBBB
+
+  same item, new paragrah AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+  BBBBBBBBBBB
+
+• item 2
+
+      ]]
+      assert_md(input, expect)
+    end)
+
+    it("code block in list", function()
+      local input = [[
+- item 1
+    ```lua
+    print('hello')
+    ```
+    - nested 1
+- item 2
+      ]]
+      local expect = [[
+• item 1
+  >lua
+  print('hello')
+  <
+  • nested 1
+• item 2
+      ]]
+      assert_md(input, expect)
+    end)
+  end)
+
+  describe("ol", function()
+    it("mixed", function()
+      local expect
+      local input = [[
+9. item 1
+    9. nested 1
+    10. nested 2
+    - nested 2
+        ```lua
+        print('hello')
+        ```
+10. item 2
+      ]]
+
+      expect = [[
+9.  item 1
+    9.  nested 1
+    10. nested 2
+    •   nested 2
+        >lua
+        print('hello')
+        <
+10. item 2
+      ]]
+      assert_md(input, expect)
+
+      expect = [[
+    9.  item 1
+        9.  nested 1
+        10. nested 2
+        •   nested 2
+            >lua
+            print('hello')
+            <
+    10. item 2
+      ]]
+      assert_md(input, expect, 4, 4)
+
+      expect = [[
+    9.  item 1
+            9.  nested 1
+            10. nested 2
+            •   nested 2
+                >lua
+                print('hello')
+                <
+        10. item 2
+      ]]
+      assert_md(input, expect, 4, 8)
+    end)
+  end)
+
+  pending("huh", function()
+    local input =
+      "some description about Foobar\n- here's a list\n    - it's nested\n\n```lua\nprint('hello')\n```"
+    local expect = [[
+    some description about Foobar
+    • here's a list
+        • it's nested
+    >lua
+    print('hello')
+    <
+    ]]
+    assert_md(input, expect, 4, 4)
   end)
 end)

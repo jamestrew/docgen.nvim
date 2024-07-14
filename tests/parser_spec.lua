@@ -114,32 +114,3 @@ describe("param", function()
     end)
   end
 end)
-
-describe("brief", function()
-  --- @param name string
-  --- @param text string
-  --- @param exp table
-  local function test(name, text, exp)
-    local _, _, actual, _ = parser.parse_str(text, "myfile.lua")
-    pending(name, function()
-      assert.are.same(#exp, #actual)
-      assert.are.same(exp, actual)
-    end)
-  end
-  test(
-    "empty",
-    [[
-  ---@brief
-  ]],
-    { "" }
-  )
-
-  test(
-    "basic",
-    [[
-  ---@brief
-  --- hello
-  ]],
-    { "\nhello" }
-  )
-end)
