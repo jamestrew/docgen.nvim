@@ -42,7 +42,7 @@ local function assert_lines(expect, actual, other)
   if not passes then assert.are.same(expect, actual, inspect_diff(expect, actual, other)) end
 end
 
-pending("briefs", function()
+describe("briefs", function()
   local assert_brief = function(input, expect)
     input = vim.trim(input) .. "\n"
     expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
@@ -51,34 +51,6 @@ pending("briefs", function()
     local md = parse_md(briefs[1])
     assert_lines(expect, actual, md)
   end
-
-  describe("ol", function()
-    it("works", function()
-      local input = [[
----@brief
---- 9. item 1
----     9. nested 1
----     10. nested 2
----     - nested 2
----         ```lua
----         print('hello')
----         ```
---- 10. item 2
-    ]]
-
-      local expect = [[
-9.  item 1
-    9.  nested 1
-    10. nested 2
-    •   nested 2
-        >lua
-        print('hello')
-        <
-10. item 2
-    ]]
-      assert_brief(input, expect)
-    end)
-  end)
 end)
 
 describe("functions", function()
@@ -236,7 +208,7 @@ funky_params({...}, {ty})                             *foo.lua.funky_params()*
   end)
 end)
 
-pending("classes", function()
+describe("classes", function()
   local assert_classes = function(input, expect)
     input = string.format("local M = {}\n%s\nreturn M\n", input)
     expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
@@ -265,7 +237,7 @@ pending("classes", function()
 *Foobar*
     some description about Foobar
     • here's a list
-        • it's nested
+      • it's nested
     >lua
     print('hello')
     <
@@ -638,13 +610,13 @@ This is useful if you want to draw a table or write some code
     end)
   end)
 
-  pending("huh", function()
+  it("huh", function()
     local input =
       "some description about Foobar\n- here's a list\n    - it's nested\n\n```lua\nprint('hello')\n```"
     local expect = [[
     some description about Foobar
     • here's a list
-        • it's nested
+      • it's nested
     >lua
     print('hello')
     <

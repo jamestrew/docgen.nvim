@@ -25,15 +25,84 @@ M.run = function(opts)
   io.close(f)
 end
 
-
-
-
-vim.print(parser.parse_str([[
+vim.print(parser.parse_str(
+  [[
 ---@brief
 --- hello
 --- there
 ---
 --- newline
-]], "foo.lua"))
+
+
+local M = {}
+
+--- Append `x` to 'foo'
+---@param x string some string to append to 'foo'
+---@return string x the string 'foo' appended with 'x'
+M.foo = function(x)
+  return "foo" .. x
+end
+
+---@class M
+---@field bar string
+local M = {
+  bar = "hello"
+}
+
+--- hello
+function M:new()
+  return setmetatable({}, { __index = {} })
+end
+
+return M
+]],
+  "foo.lua"
+))
+
+--[[
+{
+  M = {
+    fields = { {
+        kind = "field",
+        name = "bar",
+        type = "string"
+      }, {
+        name = "new",
+        type = "fun(self: M)"
+      } },
+    kind = "class",
+    module = "foo.lua",
+    modvar = "M",
+    name = "M"
+  }
+}
+{ {
+    desc = "Append `x` to 'foo'",
+    module = "foo.lua",
+    modvar = "M",
+    name = "foo",
+    params = { {
+        desc = "some string to append to 'foo'",
+        name = "x",
+        type = "string"
+      } },
+    returns = { {
+        desc = "the string 'foo' appended with 'x'",
+        name = "x",
+        type = "string"
+      } },
+    table = true
+  }, {
+    class = "M",
+    classvar = "M",
+    name = "new",
+    params = { {
+        name = "self",
+        type = "M"
+      } }
+  } }
+{ "\nhello\nthere\n\nnewline" }
+{}
+]]
 
 return M

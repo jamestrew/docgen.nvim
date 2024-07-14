@@ -438,19 +438,24 @@ local function render_ol(ol, lines, start_indent, indent, list_marker_size)
   local max_marker = ol.start + #ol.items - 1
   list_marker_size = #tostring(max_marker) + 1 + 1 -- number + dot + space
 
-  for i, item in ipairs(ol.items) do
+  for i, items in ipairs(ol.items) do
     local marker_ws = string.rep(" ", start_indent)
-    local marker = tostring(ol.start + i - 1) .. "."
-    marker = marker .. string.rep(" ", list_marker_size - #marker)
+    local marker_num = tostring(ol.start + i - 1) .. "."
+    local marker = string.format(
+      "%s%s%s",
+      marker_ws,
+      marker_num,
+      string.rep(" ", list_marker_size - #marker_num)
+    )
+
     local list_item = M._render_markdown(
-      item,
+      items,
       indent + list_marker_size,
       indent + list_marker_size,
       list_marker_size
-    )
-      :gsub("^ *", "")
+    ):gsub("^ *", "")
 
-    table.insert(lines, marker_ws .. marker .. list_item:gsub("^ *", "") .. sep)
+    table.insert(lines, string.format("%s%s%s", marker, list_item, sep))
     start_indent = indent
   end
 end
