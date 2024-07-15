@@ -9,9 +9,10 @@ local M = {}
 -- api ideas
 ---@param opts docgen.config.opts
 M.run = function(opts)
-  local docs = {}
+  local docs = {} ---@type string[]
   for _, file in ipairs(opts.files) do
-    table.insert(docs, tostring(vim.inspect(parser.parse(file))))
+    local classes, funs, briefs = parser.parse(file)
+    table.insert(docs, vim.inspect({ classes = classes, funs = funs, briefs = briefs }))
   end
 
   local fname = vim.fs.joinpath(".", "doc", opts.name)
@@ -19,9 +20,9 @@ M.run = function(opts)
   if f == nil then error(string.format("failed to open file: %s\n%s", fname, err)) end
 
   for _, x in ipairs(docs) do
-    io.write(f, vim.inspect(x))
+    f:write(x)
   end
-  io.close(f)
+  f:close()
 end
 
 return M
