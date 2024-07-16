@@ -126,6 +126,7 @@ local grammar = P({
     + annot("nodoc")
     + annot("inlinedoc")
     + annot("brief", desc)
+    + annot("eval", desc)
   ),
 
   field_name = Cg(lname + (v.ty_index * opt(P("?"))), "name"),

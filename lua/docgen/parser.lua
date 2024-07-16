@@ -94,7 +94,13 @@ local function process_doc_line(line, state)
 
   local parsed = luacats_grammar:match(line)
 
-  if not parsed then
+  if not parsed or parsed.kind == "eval" then
+    if parsed and parsed.kind == "eval" then
+      local f, err = loadstring(parsed.desc)
+      if err or f == nil then error("Error evaluating: " .. parsed.desc .. " - " .. err) end
+      line = "\n" .. f()
+    end
+
     if line:match("^ ") then line = line:sub(2) end
 
     if state.last_doc_item then
@@ -247,27 +253,12 @@ local function fun2field(fun)
   }
 end
 
---- Function to normalize known form for declaring functions and normalize into a more standard
---- form.
---- @param line string
---- @return string
-local function filter_decl(line)
-  -- M.fun = vim._memoize(function(...)
-  --   ->
-  -- function M.fun(...)
-  line = line:gsub("^local (.+) = memoize%([^,]+, function%((.*)%)$", "local function %1(%2)")
-  line = line:gsub("^(.+) = memoize%([^,]+, function%((.*)%)$", "function %1(%2)")
-  return line
-end
-
 --- @param line string
 --- @param state docgen.luacats.parser.State
 --- @param classes table<string,docgen.luacats.parser.class>
 --- @param classvars table<string,string>
 --- @param has_indent boolean
 local function process_lua_line(line, state, classes, classvars, has_indent)
-  line = filter_decl(line)
-
   if state.cur_obj and state.cur_obj.kind == "class" then
     local nm = line:match("^local%s+([a-zA-Z0-9_]+)%s*=")
     if nm then classvars[nm] = state.cur_obj.name end
@@ -407,28 +398,6 @@ local function commit_obj(obj, classes, funs, briefs, uncommitted)
   return commit
 end
 
---- @param filename string
---- @param uncommitted docgen.luacats.parser.obj[]
--- luacheck: no unused
----@diagnostic disable-next-line: unused-function, unused-local
-local function dump_uncommitted(filename, uncommitted)
-  local out_path = "luacats-uncommited/" .. filename:gsub("/", "%%") .. ".txt"
-  if #uncommitted > 0 then
-    print(string.format("Could not commit %d objects in %s", #uncommitted, filename))
-    vim.fn.mkdir(assert(vim.fs.dirname(out_path)), "p")
-    local f = assert(io.open(out_path, "w"))
-    for i, x in ipairs(uncommitted) do
-      f:write(i)
-      f:write(": ")
-      f:write(vim.inspect(x))
-      f:write("\n")
-    end
-    f:close()
-  else
-    vim.fn.delete(out_path)
-  end
-end
-
 local M = {}
 
 ---comment
@@ -482,8 +451,6 @@ function M.parse_str(str, filename)
       state = {}
     end
   end
-
-  -- dump_uncommitted(filename, uncommitted)
 
   return classes, funs, briefs, uncommitted
 end

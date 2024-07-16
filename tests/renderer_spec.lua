@@ -65,6 +65,7 @@ describe("functions", function()
   it("basic", function()
     local input = [[
 --- Append `x` to 'foo'
+---@eval return vim.inspect({ x = 1, y = 2 })
 ---@note this is a note
 ---@param x string some string to append to 'foo'
 ---@param y string another string to append to 'foo'
@@ -81,6 +82,8 @@ M.bar = function() end
     local expect = [[
 foo({x}, {y})                                                  *foo.lua.foo()*
     Append `x` to 'foo'
+
+    { x = 1, y = 2 }
 
     Note: ~
       • this is a note
