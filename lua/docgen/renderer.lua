@@ -39,8 +39,8 @@ local text_wrap = function(text, start_indent, indents)
 end
 
 ---@param ty string
----@param classes table<string, docgen.luacats.parser.class>
----@return docgen.luacats.parser.class?
+---@param classes table<string, docgen.parser.class>
+---@return docgen.parser.class?
 local function get_class(ty, classes)
   if not classes then return end
   -- extract type from optional annotation or list annotation
@@ -95,8 +95,8 @@ local function get_default(desc)
   return desc, default
 end
 
----@param obj docgen.luacats.parser.field|docgen.luacats.parser.param|docgen.luacats.parser.return
----@param classes table<string, docgen.luacats.parser.class>
+---@param obj docgen.parser.field|docgen.parser.param|docgen.parser.return
+---@param classes table<string, docgen.parser.class>
 local function inline_type(obj, classes)
   local ty = obj.type
   if not ty then return end
@@ -146,9 +146,9 @@ local function inline_type(obj, classes)
   obj.desc = desc
 end
 
----@param objs (docgen.luacats.parser.field | docgen.luacats.parser.param)[]
+---@param objs (docgen.parser.field | docgen.parser.param)[]
 ---@param generics? table<string, string>
----@param classes table<string, docgen.luacats.parser.class>
+---@param classes table<string, docgen.parser.class>
 ---@return string
 local function render_fields_or_params(objs, generics, classes)
   local res = {}
@@ -208,8 +208,8 @@ local function render_fields_or_params(objs, generics, classes)
   return table.concat(res)
 end
 
----@param class docgen.luacats.parser.class
----@param classes table<string, docgen.luacats.parser.class>
+---@param class docgen.parser.class
+---@param classes table<string, docgen.parser.class>
 ---@return string?
 local function render_class(class, classes)
   if class.access or class.nodoc then return end
@@ -239,7 +239,7 @@ local function render_class(class, classes)
   return table.concat(res)
 end
 
----@param classes table<string, docgen.luacats.parser.class>
+---@param classes table<string, docgen.parser.class>
 ---@return string
 M.render_classes = function(classes)
   local res = {}
@@ -249,9 +249,10 @@ M.render_classes = function(classes)
   return table.concat(res)
 end
 
----@param fun docgen.luacats.parser.fun
+---@param fun docgen.parser.fun
+---@param section docgen.section
 ---@return string?
-local function render_fun_header(fun)
+local function render_fun_header(fun, section)
   local res = {}
 
   local params = {}
@@ -259,7 +260,8 @@ local function render_fun_header(fun)
     if param.name ~= "self" then table.insert(params, format_field_name(param.name)) end
   end
 
-  local name = fun.classvar and string.format("%s:%s", fun.classvar, fun.name) or fun.name
+  local name = fun.classvar and string.format("%s:%s", fun.classvar, fun.name)
+    or string.format("%s.%s", section.fn_prefix, fun.name)
   local param_str = table.concat(params, ", ")
   local proto = fun.table and name or string.format("%s(%s)", name, param_str)
 
@@ -268,7 +270,7 @@ local function render_fun_header(fun)
   if fun.classvar then
     tag = string.format("*%s:%s%s*", fun.classvar, fun.name, fn_suffix)
   else
-    tag = string.format("*%s.%s%s*", fun.module, fun.name, fn_suffix)
+    tag = string.format("*%s.%s%s*", section.tag, fun.name, fn_suffix)
   end
 
   local header_width = #proto + #tag
@@ -285,9 +287,9 @@ local function render_fun_header(fun)
   return table.concat(res)
 end
 
----@param returns docgen.luacats.parser.return[]
+---@param returns docgen.parser.return[]
 ---@param generics table<string, string>
----@param classes table<string, docgen.luacats.parser.class>
+---@param classes table<string, docgen.parser.class>
 ---@return string
 local function render_fun_returns(returns, generics, classes)
   local res = {}
@@ -307,17 +309,30 @@ local function render_fun_returns(returns, generics, classes)
   return table.concat(res)
 end
 
----@param fun docgen.luacats.parser.fun
----@param classes table<string, docgen.luacats.parser.class>
+---@param fun docgen.parser.fun
+---@param config? docgen.FunConfig
+local function xform_fn_name(fun, config)
+  if config and config.fn_xform then
+    config.fn_xform(fun)
+    return
+  end
+end
+
+---@param fun docgen.parser.fun
+---@param classes table<string, docgen.parser.class>
+---@param section docgen.section
+---@param config? docgen.FunConfig
 ---@return string?
-local function render_fun(fun, classes)
+local function render_fun(fun, classes, section, config)
   if fun.access or fun.deprecated or fun.nodoc then return end
   if vim.startswith(fun.name, "_") or fun.name:find("[:.]_") then return end
 
   local res = {}
   local bullet_offset = TAB_WIDTH * 2
 
-  table.insert(res, render_fun_header(fun))
+  xform_fn_name(fun, config)
+
+  table.insert(res, render_fun_header(fun, section))
   table.insert(res, "\n")
 
   if fun.desc then
@@ -373,13 +388,15 @@ local function render_fun(fun, classes)
   return table.concat(res)
 end
 
----@param funs docgen.luacats.parser.fun[]
----@param classes table<string, docgen.luacats.parser.class>
+---@param funs docgen.parser.fun[]
+---@param classes table<string, docgen.parser.class>
+---@param section docgen.section
+---@param config? docgen.FunConfig
 ---@return string
-M.render_funs = function(funs, classes)
+M.render_funs = function(funs, classes, section, config)
   local res = {}
   for _, fun in ipairs(funs) do
-    local fun_doc = render_fun(fun, classes)
+    local fun_doc = render_fun(fun, classes, section, config)
     if fun_doc then table.insert(res, fun_doc) end
   end
   return table.concat(res)
@@ -518,6 +535,59 @@ M.render_briefs = function(briefs)
     table.insert(res, M.render_markdown(brief, 0, 0))
   end
   return table.concat(res)
+end
+
+---@param section docgen.section
+---@param briefs string[]
+---@param funs docgen.parser.fun[]
+---@param classes table<string, docgen.parser.class>
+---@param config docgen.Config
+---@return string
+M.render_section = function(section, briefs, funs, classes, config)
+  local res = {}
+
+  table.insert(res, string.rep("=", TEXT_WIDTH))
+  table.insert(res, "\n")
+  table.insert(
+    res,
+    string.format("%s%" .. (TEXT_WIDTH - #section.name) .. "s\n", section.name, section.tag)
+  )
+
+  local briefs_text = M.render_briefs(briefs)
+  if not briefs_text:match("^%s*$") then
+    table.insert(res, "\n\n")
+    table.insert(res, briefs_text)
+    table.insert(res, "\n")
+  end
+
+  local classes_text = M.render_classes(classes)
+  if not classes_text:match("^%s*$") then
+    table.insert(res, "\n\n")
+    table.insert(res, classes_text)
+    table.insert(res, "\n")
+  end
+
+  local funs_text = M.render_funs(funs, classes, section, config.fn_config)
+  if not funs_text:match("^%s*$") then
+    table.insert(res, "\n\n")
+    table.insert(res, funs_text)
+  end
+
+  return table.concat(res)
+end
+
+---@param doc_lines string[]
+function M.append_modeline(doc_lines)
+  table.insert(
+    doc_lines,
+    string.format(
+      " vim:tw=%d:ts=%d:sw=%d:sts=%d:et:ft=help:norl:\n",
+      TEXT_WIDTH,
+      TAB_WIDTH * 2,
+      TAB_WIDTH,
+      TAB_WIDTH
+    )
+  )
 end
 
 return M

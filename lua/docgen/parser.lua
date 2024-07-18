@@ -1,31 +1,31 @@
 local luacats_grammar = require("docgen.grammar.luacats")
 
---- @class docgen.luacats.parser.param
+--- @class docgen.parser.param
 --- @field name string
 --- @field type string
 --- @field desc? string
 
---- @class docgen.luacats.parser.return
+--- @class docgen.parser.return
 --- @field name string
 --- @field type string
 --- @field desc? string
 
---- @class docgen.luacats.parser.note
+--- @class docgen.parser.note
 --- @field desc? string
 
---- @class docgen.luacats.parser.brief
+--- @class docgen.parser.brief
 --- @field kind 'brief'
 --- @field desc? string
 
---- @class docgen.luacats.parser.alias
+--- @class docgen.parser.alias
 --- @field kind 'alias'
 --- @field type string[]
 --- @field desc? string
 
---- @class docgen.luacats.parser.fun
+--- @class docgen.parser.fun
 --- @field name string
---- @field params docgen.luacats.parser.param[]
---- @field returns docgen.luacats.parser.return[]
+--- @field params docgen.parser.param[]
+--- @field returns docgen.parser.return[]
 --- @field desc string
 --- @field access? 'private'|'package'|'protected'
 --- @field class? string
@@ -38,16 +38,16 @@ local luacats_grammar = require("docgen.grammar.luacats")
 --- @field nodoc? true
 --- @field generics? table<string,string>
 --- @field table? true
---- @field notes? docgen.luacats.parser.note[]
---- @field see? docgen.luacats.parser.note[]
+--- @field notes? docgen.parser.note[]
+--- @field see? docgen.parser.note[]
 
---- @class docgen.luacats.parser.field
+--- @class docgen.parser.field
 --- @field name string
 --- @field type string
 --- @field desc string
 --- @field access? 'private'|'package'|'protected'
 
---- @class docgen.luacats.parser.class
+--- @class docgen.parser.class
 --- @field kind 'class'
 --- @field parent? string
 --- @field name string
@@ -55,24 +55,24 @@ local luacats_grammar = require("docgen.grammar.luacats")
 --- @field nodoc? true
 --- @field inlinedoc? true
 --- @field access? 'private'|'package'|'protected'
---- @field fields docgen.luacats.parser.field[]
+--- @field fields docgen.parser.field[]
 --- @field notes? string[]
 
---- @class docgen.luacats.parser.State
+--- @class docgen.parser.State
 --- @field doc_lines? string[]
---- @field cur_obj? docgen.luacats.parser.obj
---- @field last_doc_item? docgen.luacats.parser.param|docgen.luacats.parser.return|docgen.luacats.parser.note
+--- @field cur_obj? docgen.parser.obj
+--- @field last_doc_item? docgen.parser.param|docgen.parser.return|docgen.parser.note
 --- @field last_doc_item_indent? integer
 
---- @alias docgen.luacats.parser.obj
---- | docgen.luacats.parser.class
---- | docgen.luacats.parser.fun
---- | docgen.luacats.parser.brief
---- | docgen.luacats.parser.alias
+--- @alias docgen.parser.obj
+--- | docgen.parser.class
+--- | docgen.parser.fun
+--- | docgen.parser.brief
+--- | docgen.parser.alias
 
 --- If we collected any `---` lines. Add them to the existing (or new) object
 --- Used for function/class descriptions and multiline param descriptions.
---- @param state docgen.luacats.parser.State
+--- @param state docgen.parser.State
 local function add_doc_lines_to_obj(state)
   if state.doc_lines then
     state.cur_obj = state.cur_obj or {}
@@ -88,7 +88,7 @@ local function add_doc_lines_to_obj(state)
 end
 
 --- @param line string
---- @param state docgen.luacats.parser.State
+--- @param state docgen.parser.State
 local function process_doc_line(line, state)
   line = line:sub(4):gsub("^%s+@", "@")
 
@@ -228,8 +228,8 @@ local function process_doc_line(line, state)
   end
 end
 
---- @param fun docgen.luacats.parser.fun
---- @return docgen.luacats.parser.field
+--- @param fun docgen.parser.fun
+--- @return docgen.parser.field
 local function fun2field(fun)
   local parts = { "fun(" }
   for _, p in ipairs(fun.params or {}) do
@@ -254,8 +254,8 @@ local function fun2field(fun)
 end
 
 --- @param line string
---- @param state docgen.luacats.parser.State
---- @param classes table<string,docgen.luacats.parser.class>
+--- @param state docgen.parser.State
+--- @param classes table<string,docgen.parser.class>
 --- @param classvars table<string,string>
 --- @param has_indent boolean
 local function process_lua_line(line, state, classes, classvars, has_indent)
@@ -276,7 +276,7 @@ local function process_lua_line(line, state, classes, classvars, has_indent)
       -- Match `Class:foo` methods for defined classes
       local class = classvars[parent_tbl]
       if class then
-        --- @cast cur_obj docgen.luacats.parser.fun
+        --- @cast cur_obj docgen.parser.fun
         cur_obj.name = fun_or_meth_nm
         cur_obj.class = class
         cur_obj.classvar = parent_tbl
@@ -367,15 +367,15 @@ local function determine_modvar(str)
   return modvar
 end
 
---- @param obj docgen.luacats.parser.obj
---- @param funs docgen.luacats.parser.fun[]
---- @param classes table<string,docgen.luacats.parser.class>
+--- @param obj docgen.parser.obj
+--- @param funs docgen.parser.fun[]
+--- @param classes table<string,docgen.parser.class>
 --- @param briefs string[]
---- @param uncommitted docgen.luacats.parser.obj[]
+--- @param uncommitted docgen.parser.obj[]
 local function commit_obj(obj, classes, funs, briefs, uncommitted)
   local commit = false
   if obj.kind == "class" then
-    --- @cast obj docgen.luacats.parser.class
+    --- @cast obj docgen.parser.class
     if not classes[obj.name] then
       classes[obj.name] = obj
       commit = true
@@ -384,11 +384,11 @@ local function commit_obj(obj, classes, funs, briefs, uncommitted)
     -- Just pretend
     commit = true
   elseif obj.kind == "brief" then
-    --- @cast obj docgen.luacats.parser.brief`
+    --- @cast obj docgen.parser.brief`
     briefs[#briefs + 1] = obj.desc
     commit = true
   else
-    --- @cast obj docgen.luacats.parser.fun`
+    --- @cast obj docgen.parser.fun`
     if obj.name then
       funs[#funs + 1] = obj
       commit = true
@@ -403,13 +403,13 @@ local M = {}
 ---comment
 ---@param str string input string
 ---@param filename string
----@return table<string, docgen.luacats.parser.class>
----@return docgen.luacats.parser.fun[]
+---@return table<string, docgen.parser.class>
+---@return docgen.parser.fun[]
 ---@return string[]
----@return docgen.luacats.parser.alias|docgen.luacats.parser.brief|docgen.luacats.parser.class|docgen.luacats.parser.fun[]
+---@return docgen.parser.alias|docgen.parser.brief|docgen.parser.class|docgen.parser.fun[]
 function M.parse_str(str, filename)
-  local funs = {} --- @type docgen.luacats.parser.fun[]
-  local classes = {} --- @type table<string,docgen.luacats.parser.class>
+  local funs = {} --- @type docgen.parser.fun[]
+  local classes = {} --- @type table<string,docgen.parser.class>
   local briefs = {} --- @type docgen.grammar.markdown.result[]
 
   local mod_return = determine_modvar(str)
@@ -419,10 +419,10 @@ function M.parse_str(str, filename)
   module = module:gsub("/", ".")
 
   local classvars = {} --- @type table<string,string>
-  local state = {} --- @type docgen.luacats.parser.State
+  local state = {} --- @type docgen.parser.State
 
   -- Keep track of any partial objects we don't commit
-  local uncommitted = {} --- @type docgen.luacats.parser.obj[]
+  local uncommitted = {} --- @type docgen.parser.obj[]
 
   for line in vim.gsplit(str, "\n") do
     local has_indent = line:match("^%s+") ~= nil

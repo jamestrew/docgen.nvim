@@ -1,0 +1,102 @@
+==============================================================================
+DOCGEN                                                                  docgen
+
+
+docgen.section_title({filename}, {config})            *docgen.section_title()*
+    Generate a section title from the filename by joining the useful module
+    name using underscores and uppercasing everything.
+
+    eg:
+    • './lua/telescope/actions/init.lua' -> 'ACTIONS'
+    • './lua/telescope/actions/set.lua' -> 'ACTIONS_SET'
+
+    Parameters: ~
+      • {filename}  (`string`)
+      • {config}    (`docgen.Config`)
+
+    Return: ~
+        (`string`)
+
+docgen.run({config})                                            *docgen.run()*
+    Parameters: ~
+      • {config}  (`docgen.Config`)
+
+==============================================================================
+PARSER                                                           docgen.parser
+
+
+parser.parse_str({str}, {filename})                *docgen.parser.parse_str()*
+    comment
+
+    Parameters: ~
+      • {str}       (`string`) input string
+      • {filename}  (`string`)
+
+    Return (multiple): ~
+        (`table<string, docgen.parser.class>`)
+        (`docgen.parser.fun[]`)
+        (`string[]`)
+        
+        (`docgen.parser.alias|docgen.parser.brief|docgen.parser.class|docgen.parser.fun[]`)
+
+parser.parse({filename})                               *docgen.parser.parse()*
+    Parameters: ~
+      • {filename}  (`string`)
+
+==============================================================================
+RENDERER                                                       docgen.renderer
+
+
+renderer.render_classes({classes})          *docgen.renderer.render_classes()*
+    Parameters: ~
+      • {classes}  (`table<string, docgen.parser.class>`)
+
+    Return: ~
+        (`string`)
+
+                                               *docgen.renderer.render_funs()*
+renderer.render_funs({funs}, {classes}, {section}, {config})
+    Parameters: ~
+      • {funs}     (`docgen.parser.fun[]`)
+      • {classes}  (`table<string, docgen.parser.class>`)
+      • {section}  (`docgen.section`)
+      • {config}   (`docgen.FunConfig?`)
+
+    Return: ~
+        (`string`)
+
+                                           *docgen.renderer.render_markdown()*
+renderer.render_markdown({markdown}, {start_indent}, {indent})
+    Parameters: ~
+      • {markdown}      (`string`)
+      • {start_indent}  (`integer`) indentation amount for the first line
+      • {indent}        (`integer`) indentation amount for subsequent lines
+
+    Return: ~
+        (`string`)
+
+renderer.render_briefs({briefs})             *docgen.renderer.render_briefs()*
+    Parameters: ~
+      • {briefs}  (`string[]`)
+
+    Return: ~
+        (`string`)
+
+                                            *docgen.renderer.render_section()*
+renderer.render_section({section}, {briefs}, {funs}, {classes}, {config})
+    Parameters: ~
+      • {section}  (`docgen.section`)
+      • {briefs}   (`string[]`)
+      • {funs}     (`docgen.parser.fun[]`)
+      • {classes}  (`table<string, docgen.parser.class>`)
+      • {config}   (`docgen.Config`)
+
+    Return: ~
+        (`string`)
+
+                                           *docgen.renderer.append_modeline()*
+renderer.append_modeline({doc_lines})
+    Parameters: ~
+      • {doc_lines}  (`string[]`)
+
+ vim:tw=78:ts=8:sw=4:sts=4:et:ft=help:norl:

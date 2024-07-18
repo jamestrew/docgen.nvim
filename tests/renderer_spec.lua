@@ -42,23 +42,19 @@ local function assert_lines(expect, actual, other)
   if not passes then assert.are.same(expect, actual, inspect_diff(expect, actual, other)) end
 end
 
-describe("briefs", function()
-  local assert_brief = function(input, expect)
-    input = vim.trim(input) .. "\n"
-    expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
-    local _, _, briefs, _ = parser.parse_str(input, "foo.lua")
-    local actual = renderer.render_briefs(briefs)
-    local md = parse_md(briefs[1])
-    assert_lines(expect, actual, md)
-  end
-end)
-
 describe("functions", function()
+  ---@type docgen.section
+  local section = {
+    name = "FOO_BAR",
+    tag = "foo.bar",
+    fn_prefix = "foo_bar",
+  }
+
   local assert_funs = function(input, expect)
     input = string.format("local M = {}\n%s\nreturn M\n", input)
     expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
     local classes, funs, _, _ = parser.parse_str(input, "foo.lua")
-    local actual = renderer.render_funs(funs, classes):gsub("[ \n]+$", "")
+    local actual = renderer.render_funs(funs, classes, section, {}):gsub("[ \n]+$", "")
     assert_lines(expect, actual, { classes = classes, funs = funs })
   end
 
@@ -80,7 +76,7 @@ M.bar = function() end
     ]]
 
     local expect = [[
-foo({x}, {y})                                                  *foo.lua.foo()*
+foo_bar.foo({x}, {y})                                          *foo.bar.foo()*
     Append `x` to 'foo'
 
     { x = 1, y = 2 }
@@ -101,7 +97,7 @@ foo({x}, {y})                                                  *foo.lua.foo()*
     See also: ~
       • foobar
 
-bar()                                                          *foo.lua.bar()*
+foo_bar.bar()                                                  *foo.bar.bar()*
     another one
 ]]
 
@@ -166,8 +162,8 @@ M.this_is_a_really_long_function_name_that_should_be_wrapped = function(some_par
 end
     ]]
     local expect = [[
-        *foo.lua.this_is_a_really_long_function_name_that_should_be_wrapped()*
-this_is_a_really_long_function_name_that_should_be_wrapped({some_param})
+        *foo.bar.this_is_a_really_long_function_name_that_should_be_wrapped()*
+foo_bar.this_is_a_really_long_function_name_that_should_be_wrapped({some_param})
     hello
 
     Parameters: ~
@@ -194,7 +190,7 @@ end
     ]]
 
     local expect = [[
-funky_params({...}, {ty})                             *foo.lua.funky_params()*
+foo_bar.funky_params({...}, {ty})                     *foo.bar.funky_params()*
     hello
 
     Parameters: ~
