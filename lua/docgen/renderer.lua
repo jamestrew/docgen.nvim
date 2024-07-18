@@ -169,18 +169,18 @@ local function render_fields_or_params(objs, generics, classes)
   end
 
   local indent_offset = indent + 9
-  for _, p in ipairs(objs) do
-    local desc, default = get_default(p.desc)
-    p.desc = desc
+  for _, obj in ipairs(objs) do
+    local desc, default = get_default(obj.desc)
+    obj.desc = desc
 
-    inline_type(p, classes)
+    inline_type(obj, classes)
 
-    local fname = p.kind == "operator" and string.format("op(%s)", p.name)
-      or format_field_name(p.name)
+    local fname = obj.kind == "operator" and string.format("op(%s)", obj.name)
+      or format_field_name(obj.name)
     local pname = string.format("%s  • %-" .. indent .. "s", TAB, fname)
 
-    if p.type then
-      local pty = render_type(p.type, generics, default)
+    if obj.type then
+      local pty = render_type(obj.type, generics, default)
 
       if desc then
         table.insert(res, pname)
@@ -550,7 +550,7 @@ M.render_section = function(section, briefs, funs, classes, config)
   table.insert(res, "\n")
   table.insert(
     res,
-    string.format("%s%" .. (TEXT_WIDTH - #section.name) .. "s\n", section.name, section.tag)
+    string.format("%s%" .. (TEXT_WIDTH - #section.title) .. "s\n", section.title, section.tag)
   )
 
   local briefs_text = M.render_briefs(briefs)

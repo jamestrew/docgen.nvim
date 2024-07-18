@@ -2,6 +2,32 @@
 DOCGEN                                                                  docgen
 
 
+*docgen.Config*
+
+    Fields: ~
+      • {name}          (`string`) plugin name, will be used to generate filename, eg `docgen` ->
+                        `docgen.txt`
+      • {files}         (`string[]`) file paths to generate docs from in order
+      • {section_fmt}?  (`fun(filename: string): string`) function to generate section titles from
+                        filenames if not provided, |section_title| will be
+                        used
+      • {fn_config}?    (`docgen.FunConfig`)
+
+*docgen.FunConfig*
+
+    Fields: ~
+      • {fn_xform}?  (`fun(fn: docgen.parser.fun)`)
+
+*docgen.section*
+
+    Fields: ~
+      • {title}      (`string`)
+      • {tag}        (`string`)
+      • {fn_prefix}  (`string`)
+
+
+
+
 docgen.section_title({filename}, {config})            *docgen.section_title()*
     Generate a section title from the filename by joining the useful module
     name using underscores and uppercasing everything.
@@ -12,17 +38,102 @@ docgen.section_title({filename}, {config})            *docgen.section_title()*
 
     Parameters: ~
       • {filename}  (`string`)
-      • {config}    (`docgen.Config`)
+      • {config}    (`table`)
 
     Return: ~
         (`string`)
 
 docgen.run({config})                                            *docgen.run()*
     Parameters: ~
-      • {config}  (`docgen.Config`)
+      • {config}  (`table`)
 
 ==============================================================================
 PARSER                                                           docgen.parser
+
+
+*docgen.parser.State*
+
+    Fields: ~
+      • {doc_lines}?             (`string[]`)
+      • {cur_obj}?               (`docgen.parser.obj`)
+      • {last_doc_item}?         (`docgen.parser.param|docgen.parser.return|docgen.parser.note`)
+      • {last_doc_item_indent}?  (`integer`)
+
+*docgen.parser.alias*
+
+    Fields: ~
+      • {kind}   (`'alias'`)
+      • {type}   (`string[]`)
+      • {desc}?  (`string`)
+
+*docgen.parser.brief*
+
+    Fields: ~
+      • {kind}   (`'brief'`)
+      • {desc}?  (`string`)
+
+*docgen.parser.class*
+
+    Fields: ~
+      • {kind}        (`'class'`)
+      • {parent}?     (`string`)
+      • {name}        (`string`)
+      • {desc}        (`string`)
+      • {nodoc}?      (`true`)
+      • {inlinedoc}?  (`true`)
+      • {access}?     (`'private'|'package'|'protected'`)
+      • {fields}      (`docgen.parser.field[]`)
+      • {notes}?      (`string[]`)
+
+*docgen.parser.field*
+
+    Fields: ~
+      • {name}     (`string`)
+      • {type}     (`string`)
+      • {desc}     (`string`)
+      • {access}?  (`'private'|'package'|'protected'`)
+
+*docgen.parser.fun*
+
+    Fields: ~
+      • {name}         (`string`)
+      • {params}       (`docgen.parser.param[]`)
+      • {returns}      (`docgen.parser.return[]`)
+      • {desc}         (`string`)
+      • {access}?      (`'private'|'package'|'protected'`)
+      • {class}?       (`string`)
+      • {module}?      (`string`)
+      • {modvar}?      (`string`)
+      • {classvar}?    (`string`)
+      • {deprecated}?  (`true`)
+      • {since}?       (`string`) -- need?
+      • {attrs}?       (`string[]`) -- need?
+      • {nodoc}?       (`true`)
+      • {generics}?    (`table<string,string>`)
+      • {table}?       (`true`)
+      • {notes}?       (`docgen.parser.note[]`)
+      • {see}?         (`docgen.parser.note[]`)
+
+*docgen.parser.note*
+
+    Fields: ~
+      • {desc}?  (`string`)
+
+*docgen.parser.param*
+
+    Fields: ~
+      • {name}   (`string`)
+      • {type}   (`string`)
+      • {desc}?  (`string`)
+
+*docgen.parser.return*
+
+    Fields: ~
+      • {name}   (`string`)
+      • {type}   (`string`)
+      • {desc}?  (`string`)
+
+
 
 
 parser.parse_str({str}, {filename})                *docgen.parser.parse_str()*
@@ -34,7 +145,7 @@ parser.parse_str({str}, {filename})                *docgen.parser.parse_str()*
 
     Return (multiple): ~
         (`table<string, docgen.parser.class>`)
-        (`docgen.parser.fun[]`)
+        (`docgen.parser.fun[]`) See |docgen.parser.fun|
         (`string[]`)
         
         (`docgen.parser.alias|docgen.parser.brief|docgen.parser.class|docgen.parser.fun[]`)

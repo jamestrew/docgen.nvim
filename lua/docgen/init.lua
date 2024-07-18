@@ -3,7 +3,7 @@ local renderer = require("docgen.renderer")
 
 local M = {}
 
----@class (exact) docgen.Config
+---@class docgen.Config
 ---@inlinedoc
 ---
 --- plugin name, will be used to generate filename, eg `docgen` -> `docgen.txt`
@@ -19,11 +19,11 @@ local M = {}
 ---
 ---@field fn_config? docgen.FunConfig
 
----@class (exact) docgen.FunConfig
+---@class docgen.FunConfig
 ---@field fn_xform? fun(fn: docgen.parser.fun)
 
----@class (exact) docgen.section
----@field name string
+---@class docgen.section
+---@field title string
 ---@field tag string
 ---@field fn_prefix string
 
@@ -72,7 +72,7 @@ local function make_section(filename, config)
   local name = section_fmt(filename, config)
   local name_lower = name:lower()
   return {
-    name = name,
+    title = name,
     tag = name_lower ~= config.name and string.format("%s.%s", config.name, name_lower)
       or name_lower,
     fn_prefix = name_lower,
@@ -89,6 +89,7 @@ M.run = function(config)
   for _, file in ipairs(config.files) do
     local classes, funs, briefs = parser.parse(file)
     file_res[file] = { classes, funs, briefs }
+
     all_classes = vim.tbl_extend("error", all_classes, classes)
   end
 
@@ -97,7 +98,7 @@ M.run = function(config)
     print("    Generating docs for:", file)
     local classes, funs, briefs = res[1], res[2], res[3]
     local section = make_section(file, config)
-    table.insert(doc_lines, renderer.render_section(section, classes, funs, briefs, config))
+    table.insert(doc_lines, renderer.render_section(section, briefs, funs, classes, config))
   end
 
   renderer.append_modeline(doc_lines)

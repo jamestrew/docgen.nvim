@@ -45,7 +45,7 @@ end
 describe("functions", function()
   ---@type docgen.section
   local section = {
-    name = "FOO_BAR",
+    title = "FOO_BAR",
     tag = "foo.bar",
     fn_prefix = "foo_bar",
   }
