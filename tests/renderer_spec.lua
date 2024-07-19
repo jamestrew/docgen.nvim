@@ -221,6 +221,62 @@ foo_bar.funky_params({foo}, {...}, {ty})              *foo.bar.funky_params()*
 
     assert_funs(input, expect)
   end)
+
+  it("inline class", function()
+    local input = [[
+---@class Foobar
+---@inlinedoc
+---@field a string some string a
+---@field b? some optional number b (default: 42)
+
+--- Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+--- tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+--- veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+--- commodo consequat.
+---@param foobar Foobar
+---@return string
+function M.a_plus_b(foobar) end
+    ]]
+
+    local expect = [[
+foo_bar.a_plus_b({foobar})                                *foo.bar.a_plus_b()*
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+    tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+    veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+    commodo consequat.
+
+    Parameters: ~
+      • {foobar}  (`table`) A table with the following fields:
+                  • {a} (`string`) some string a
+                  • {b}? (`some`, default: 42) optional number b
+
+    Return: ~
+        (`string`)
+    ]]
+    assert_funs(input, expect)
+  end)
+
+  it("not inlined class", function()
+    local input = [[
+---@class Foobar
+---@field a string some string a
+---@field b? some optional number b (default: 42)
+
+---@param foobar Foobar
+---@return string
+function M.a_plus_b(foobar) end
+  ]]
+
+    local expect = [[
+foo_bar.a_plus_b({foobar})                                *foo.bar.a_plus_b()*
+    Parameters: ~
+      • {foobar}  (`Foobar`) See |Foobar|
+
+    Return: ~
+        (`string`)
+    ]]
+    assert_funs(input, expect)
+  end)
 end)
 
 describe("classes", function()

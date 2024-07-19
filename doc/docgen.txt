@@ -12,7 +12,7 @@ DOCGEN                                                                  docgen
       • {section_fmt}?  (`fun(filename: string): string`) function to
                         generate section titles from filenames if not
                         provided, |section_title| will be used
-      • {fn_config}?    (`docgen.FunConfig`)
+      • {fn_config}?    (`docgen.FunConfig`) See |docgen.FunConfig|
 
 *docgen.FunConfig*
 
@@ -40,14 +40,30 @@ docgen.section_title({filename}, {config})            *docgen.section_title()*
 
     Parameters: ~
       • {filename}  (`string`)
-      • {config}    (`table`)
+      • {config}    (`table`) A table with the following fields:
+                    • {name} (`string`) plugin name, will be used to generate
+                      filename, eg `docgen` -> `docgen.txt`
+                    • {files} (`string[]`) file paths to generate docs from in
+                      order
+                    • {section_fmt}? (`fun(filename: string): string`)
+                      function to generate section titles from filenames if
+                      not provided, |section_title| will be used
+                    • {fn_config}? (`docgen.FunConfig`) See |docgen.FunConfig|
 
     Return: ~
         (`string`)
 
 docgen.run({config})                                            *docgen.run()*
     Parameters: ~
-      • {config}  (`table`)
+      • {config}  (`table`) A table with the following fields:
+                  • {name} (`string`) plugin name, will be used to generate
+                    filename, eg `docgen` -> `docgen.txt`
+                  • {files} (`string[]`) file paths to generate docs from in
+                    order
+                  • {section_fmt}? (`fun(filename: string): string`) function
+                    to generate section titles from filenames if not provided,
+                    |section_title| will be used
+                  • {fn_config}? (`docgen.FunConfig`) See |docgen.FunConfig|
 
 ==============================================================================
 PARSER                                                           docgen.parser
@@ -84,7 +100,7 @@ PARSER                                                           docgen.parser
       • {nodoc}?      (`true`)
       • {inlinedoc}?  (`true`)
       • {access}?     (`'private'|'package'|'protected'`)
-      • {fields}      (`docgen.parser.field[]`)
+      • {fields}      (`docgen.parser.field[]`) See |docgen.parser.field|
       • {notes}?      (`string[]`)
 
 *docgen.parser.field*
@@ -99,8 +115,8 @@ PARSER                                                           docgen.parser
 
     Fields: ~
       • {name}         (`string`)
-      • {params}       (`docgen.parser.param[]`)
-      • {returns}      (`docgen.parser.return[]`)
+      • {params}       (`docgen.parser.param[]`) See |docgen.parser.param|
+      • {returns}      (`docgen.parser.return[]`) See |docgen.parser.return|
       • {desc}         (`string`)
       • {access}?      (`'private'|'package'|'protected'`)
       • {class}?       (`string`)
@@ -113,8 +129,8 @@ PARSER                                                           docgen.parser
       • {nodoc}?       (`true`)
       • {generics}?    (`table<string,string>`)
       • {table}?       (`true`)
-      • {notes}?       (`docgen.parser.note[]`)
-      • {see}?         (`docgen.parser.note[]`)
+      • {notes}?       (`docgen.parser.note[]`) See |docgen.parser.note|
+      • {see}?         (`docgen.parser.note[]`) See |docgen.parser.note|
 
 *docgen.parser.note*
 

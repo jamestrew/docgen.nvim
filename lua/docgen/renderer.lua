@@ -174,6 +174,7 @@ local function render_fields_or_params(objs, generics, classes)
     obj.desc = desc
 
     inline_type(obj, classes)
+    desc = obj.desc
 
     local fname = obj.kind == "operator" and string.format("op(%s)", obj.name)
       or format_field_name(obj.name)
