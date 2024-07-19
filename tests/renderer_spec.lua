@@ -61,7 +61,7 @@ describe("functions", function()
 --- Append `x` to 'foo'
 ---@eval return vim.inspect({ x = 1, y = 2 })
 ---@note this is a note
----@param x string some string to append to 'foo'
+---@param x string some string to append to 'foo' (default: "hello")
 ---@param y string another string to append to 'foo'
 ---
 --- another paragraph for the `y` parameter. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBB
@@ -83,7 +83,7 @@ foo_bar.foo({x}, {y})                                          *foo.bar.foo()*
       • this is a note
 
     Parameters: ~
-      • {x}  (`string`) some string to append to 'foo'
+      • {x}  (`string`, default: "hello") some string to append to 'foo'
       • {y}  (`string`) another string to append to 'foo'
 
              another paragraph for the `y` parameter.
