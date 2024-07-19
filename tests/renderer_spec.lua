@@ -243,7 +243,9 @@ describe("classes", function()
 --- ```
 ---@class Foobar
 ---@field a string
----@field b number
+--- some number
+--- (default:42)
+---@field b? number
 ---@field c boolean
 ---@field d "rfc2396"| "rfc2732" | "rfc3986" | nil
 ---@field e fun(a: table<string,any>): string hello this is a description
@@ -258,12 +260,12 @@ describe("classes", function()
     <
 
     Fields: ~
-      • {a}  (`string`)
-      • {b}  (`number`)
-      • {c}  (`boolean`)
-      • {d}  (`"rfc2396"|"rfc2732"|"rfc3986"?`)
-      • {e}  (`fun(a: table<string,any>): string`) hello this is a
-             description
+      • {a}   (`string`)
+      • {b}?  (`number`, default: 42) some number
+      • {c}   (`boolean`)
+      • {d}   (`"rfc2396"|"rfc2732"|"rfc3986"?`)
+      • {e}   (`fun(a: table<string,any>): string`) hello this is a
+              description
     ]]
     assert_classes(input, expect)
   end)

@@ -89,8 +89,8 @@ end
 local function get_default(desc)
   if not desc then return end
 
-  local default = desc:match("\n%s*%([dD]efault: ([^)]+)%)")
-  if default then desc = desc:gsub("\n%s*%([dD]efault: [^)]+%)", "") end
+  local default = desc:match("\n%s*%([dD]efault: *([^)]+)%)")
+  if default then desc = desc:gsub("\n%s*%([dD]efault: *[^)]+%)", "") end
 
   return desc, default
 end
