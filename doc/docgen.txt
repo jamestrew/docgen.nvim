@@ -1,6 +1,7 @@
 ==============================================================================
 DOCGEN                                                                  docgen
 
+Generate documentation from lua files with LuaCATS annotations + more.
 
 *docgen.Config*
 
@@ -25,8 +26,6 @@ DOCGEN                                                                  docgen
       • {title}      (`string`)
       • {tag}        (`string`)
       • {fn_prefix}  (`string`)
-
-
 
 
 docgen.section_title({filename}, {config})            *docgen.section_title()*
@@ -67,7 +66,6 @@ docgen.run({config})                                            *docgen.run()*
 
 ==============================================================================
 PARSER                                                           docgen.parser
-
 
 *docgen.parser.State*
 
@@ -152,8 +150,6 @@ PARSER                                                           docgen.parser
       • {desc}?  (`string`)
 
 
-
-
 parser.parse_str({str}, {filename})                *docgen.parser.parse_str()*
     comment
 
@@ -174,7 +170,6 @@ parser.parse({filename})                               *docgen.parser.parse()*
 
 ==============================================================================
 RENDERER                                                       docgen.renderer
-
 
 renderer.render_classes({classes})          *docgen.renderer.render_classes()*
     Parameters: ~

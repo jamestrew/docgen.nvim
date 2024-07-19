@@ -555,21 +555,20 @@ M.render_section = function(section, briefs, funs, classes, config)
 
   local briefs_text = M.render_briefs(briefs)
   if not briefs_text:match("^%s*$") then
-    table.insert(res, "\n\n")
+    table.insert(res, "\n")
     table.insert(res, briefs_text)
     table.insert(res, "\n")
   end
 
   local classes_text = M.render_classes(classes)
   if not classes_text:match("^%s*$") then
-    table.insert(res, "\n\n")
-    table.insert(res, classes_text)
     table.insert(res, "\n")
+    table.insert(res, classes_text)
   end
 
   local funs_text = M.render_funs(funs, classes, section, config.fn_config)
   if not funs_text:match("^%s*$") then
-    table.insert(res, "\n\n")
+    table.insert(res, "\n")
     table.insert(res, funs_text)
   end
 

@@ -1,3 +1,6 @@
+---@brief
+--- Generate documentation from lua files with LuaCATS annotations + more.
+
 local parser = require("docgen.parser")
 local renderer = require("docgen.renderer")
 
