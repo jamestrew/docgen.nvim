@@ -43,6 +43,7 @@ end
 --- name using underscores and uppercasing everything.
 ---
 --- eg:
+--- - './lua/telescope/init.lua' -> 'TELESCOPE'
 --- - './lua/telescope/actions/init.lua' -> 'ACTIONS'
 --- - './lua/telescope/actions/set.lua' -> 'ACTIONS_SET'
 ---@param filename string
@@ -104,6 +105,7 @@ M.run = function(config)
   renderer.append_modeline(doc_lines)
 
   local fname = vim.fs.joinpath(".", "doc", config.name .. ".txt")
+  print("Writing to:", fname)
   local f, err = io.open(fname, "w")
   if f == nil then error(string.format("failed to open file: %s\n%s", fname, err)) end
 

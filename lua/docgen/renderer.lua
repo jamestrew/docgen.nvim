@@ -190,8 +190,8 @@ local function render_fields_or_params(objs, generics, classes)
           table.insert(res, "\n")
         else
           desc = string.format("%s %s", pty, desc)
-          table.insert(res, M.render_markdown(desc, 1, indent_offset))
-          table.insert(res, "\n")
+          desc = M.render_markdown(desc, #pname, indent_offset):gsub("^ *", "")
+          table.insert(res, string.format(" %s\n", desc))
         end
       else
         table.insert(res, string.format("%s %s\n", pname, pty))

@@ -3,8 +3,6 @@ local renderer = require("docgen.renderer")
 local parse_md = require("docgen.grammar.markdown").parse_markdown
 
 local function string_literal(str)
-  -- str = string.gsub(str, "\n", "\\n")
-  -- str = string.gsub(str, "\t", "\\t")
   str = string.gsub(str, "    ", "󰌒")
   str = string.gsub(str, " ", "·")
   return str
@@ -179,6 +177,15 @@ foo_bar.this_is_a_really_long_function_name_that_should_be_wrapped({some_param})
     local input = [[
 --- hello
 ---@generic T
+---@param foo string? some really long explanation of foo that should be wrapped
+---
+--- Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+--- tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+--- veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+--- commodo consequat.
+--- - here's a list for fun
+--- - another one
+--- (default: "hello")
 ---@param ... string some strings
 ---@param ty `T` some type
 ---@return boolean enabled
@@ -190,10 +197,19 @@ end
     ]]
 
     local expect = [[
-foo_bar.funky_params({...}, {ty})                     *foo.bar.funky_params()*
+foo_bar.funky_params({foo}, {...}, {ty})              *foo.bar.funky_params()*
     hello
 
     Parameters: ~
+      • {foo}  (`string?`, default: "hello") some really long explanation of
+               foo that should be wrapped
+
+               Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+               eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+               enim ad minim veniam, quis nostrud exercitation ullamco laboris
+               nisi ut aliquip ex ea commodo consequat.
+               • here's a list for fun
+               • another one
       • {...}  (`string`) some strings
       • {ty}   (``T``) some type
 
@@ -246,7 +262,8 @@ describe("classes", function()
       • {b}  (`number`)
       • {c}  (`boolean`)
       • {d}  (`"rfc2396"|"rfc2732"|"rfc3986"?`)
-      • {e}  (`fun(a: table<string,any>): string`) hello this is a description
+      • {e}  (`fun(a: table<string,any>): string`) hello this is a
+             description
     ]]
     assert_classes(input, expect)
   end)

@@ -5,12 +5,13 @@ DOCGEN                                                                  docgen
 *docgen.Config*
 
     Fields: ~
-      • {name}          (`string`) plugin name, will be used to generate filename, eg `docgen` ->
-                        `docgen.txt`
-      • {files}         (`string[]`) file paths to generate docs from in order
-      • {section_fmt}?  (`fun(filename: string): string`) function to generate section titles from
-                        filenames if not provided, |section_title| will be
-                        used
+      • {name}          (`string`) plugin name, will be used to generate
+                        filename, eg `docgen` -> `docgen.txt`
+      • {files}         (`string[]`) file paths to generate docs from in
+                        order
+      • {section_fmt}?  (`fun(filename: string): string`) function to
+                        generate section titles from filenames if not
+                        provided, |section_title| will be used
       • {fn_config}?    (`docgen.FunConfig`)
 
 *docgen.FunConfig*
@@ -33,6 +34,7 @@ docgen.section_title({filename}, {config})            *docgen.section_title()*
     name using underscores and uppercasing everything.
 
     eg:
+    • './lua/telescope/init.lua' -> 'TELESCOPE'
     • './lua/telescope/actions/init.lua' -> 'ACTIONS'
     • './lua/telescope/actions/set.lua' -> 'ACTIONS_SET'
 
