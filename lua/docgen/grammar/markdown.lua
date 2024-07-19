@@ -7,7 +7,7 @@ local fill, space, ws, any, tab, num, letter, spacing =
   utils.fill, utils.space, utils.ws, utils.any, utils.tab, utils.num, utils.letter, utils.spacing
 local v = utils.v
 
-M = {}
+local M = {}
 
 ---@param name string
 ---@param self_closing boolean?

@@ -7,6 +7,7 @@ local TAB_WIDTH = 4
 local TAB = string.rep(" ", TAB_WIDTH)
 
 ---@diagnostic disable-next-line: unused-local, unused-function
+-- luacheck: ignore 211
 local function string_literal(str)
   str = string.gsub(str, "\n", "\\n")
   str = string.gsub(str, "\t", "\\t")
@@ -448,13 +449,11 @@ end
 ---@param lines string[]
 ---@param start_indent integer
 ---@param indent integer
----@param list_marker_size integer?
-local function render_ol(ol, lines, start_indent, indent, list_marker_size)
-  list_marker_size = list_marker_size or 3 -- len('1. ')
+local function render_ol(ol, lines, start_indent, indent)
   local sep = ol.tight and "\n" or "\n\n"
 
   local max_marker = ol.start + #ol.items - 1
-  list_marker_size = #tostring(max_marker) + 1 + 1 -- number + dot + space
+  local list_marker_size = #tostring(max_marker) + 1 + 1 -- number + dot + space
 
   for i, items in ipairs(ol.items) do
     local marker_ws = string.rep(" ", start_indent)
@@ -510,7 +509,7 @@ M._render_markdown = function(markdown, start_indent, indent, list_marker_size)
       render_ul(block, res, start_indent, indent, list_marker_size)
     elseif block.kind == "ol" then
       ---@cast block docgen.grammar.markdown.ol
-      render_ol(block, res, start_indent, indent, list_marker_size)
+      render_ol(block, res, start_indent, indent)
     end
 
     start_indent = indent

@@ -3,7 +3,7 @@ LPEG grammar for LuaCATS
 ]]
 
 local lpeg = vim.lpeg
-local P, R, S = lpeg.P, lpeg.R, lpeg.S
+local P, S = lpeg.P, lpeg.S
 local Ct, Cg = lpeg.Ct, lpeg.Cg
 
 local util = require("docgen.grammar.utils")
