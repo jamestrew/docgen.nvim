@@ -42,7 +42,7 @@ end
 ---@param ty string
 ---@param classes table<string, docgen.parser.class>
 ---@return docgen.parser.class?
-local function get_class(ty, classes)
+local function get_type_class(ty, classes)
   if not classes then return end
   -- extract type from optional annotation or list annotation
   local cty = ty:gsub("%s*|%s*nil", "?"):gsub("?$", ""):gsub("%[%]$", "")
@@ -86,14 +86,40 @@ local function render_type(ty, generics, default)
 end
 
 ---@param desc? string
----@return string?, string?
+---@return string, string?
 local function get_default(desc)
-  if not desc then return end
+  if not desc then return "", nil end
 
   local default = desc:match("\n?%s*%([dD]efault: *([^)]+)%)$")
   if default then desc = desc:gsub("\n?%s*%([dD]efault: *[^)]+%)$", "") end
 
   return desc, default
+end
+
+---@param class docgen.parser.class
+---@param classes table<string, docgen.parser.class>
+local function resolve_class_parents(class, classes)
+  if not class.parent then return end
+
+  local parents = {} ---@type string[]
+  local cls = class
+  repeat
+    table.insert(parents, cls.parent)
+    cls = classes[cls.parent]
+  until not cls or not cls.parent
+
+  for _, c in ipairs(parents) do
+    local child_fields = vim
+      .iter(class.fields)
+      :map(function(f)
+        return f.name
+      end)
+      :totable()
+
+    for _, field in ipairs(classes[c].fields) do
+      if not vim.tbl_contains(child_fields, field.name) then table.insert(class.fields, field) end
+    end
+  end
 end
 
 ---@param obj docgen.parser.field|docgen.parser.param|docgen.parser.return
@@ -102,12 +128,22 @@ local function inline_type(obj, classes)
   local ty = obj.type
   if not ty then return end
 
-  local cls = get_class(ty, classes)
+  local cls = get_type_class(ty, classes)
   if not cls or cls.nodoc then return end
 
   obj.desc = obj.desc or ""
 
   if not cls.inlinedoc then
+    if cls.nodoc or cls.access then
+      error(
+        string.format(
+          "Class `%s` is not to be documented as a parameter/field/return value.\n"
+            .. "Use `---@inlinedoc` or remove `---@nodoc` or access modifiers.",
+          cls.name
+        )
+      )
+    end
+
     -- add as a tag if not already done when not inlined
     local tag = string.format("|%s|", cls.name)
     if obj.desc:find(tag) then return end
@@ -132,6 +168,7 @@ local function inline_type(obj, classes)
     end
   end
 
+  resolve_class_parents(cls, classes)
   local cls_descs = {}
   for _, field in ipairs(cls.fields) do
     if not field.access then
@@ -211,16 +248,36 @@ local function render_fields_or_params(objs, generics, classes)
 end
 
 ---@param class docgen.parser.class
+---@return boolean
+local function skip_class_gen(class)
+  return not not (class.access or class.nodoc or class.inlinedoc)
+end
+
+---@param class docgen.parser.class
 ---@param classes table<string, docgen.parser.class>
 ---@return string?
 local function render_class(class, classes)
-  if class.access or class.nodoc or class.inlinedoc then return end
+  if skip_class_gen(class) then return end
 
   local res = {}
 
   table.insert(res, string.format("*%s*\n", class.name))
 
   if class.parent then
+    local parent = classes[class.parent]
+    if not parent then
+      error(string.format("Parent class %s of %s is not found", class.parent, class.name))
+    end
+    if skip_class_gen(parent) then
+      error(
+        string.format(
+          "Parent class %s of %s is not to be documented.\n"
+            .. "Use `---@inlinedoc` or remove `---@nodoc` or access modifiers.",
+          class.parent,
+          class.name
+        )
+      )
+    end
     local text = string.format("Extends |%s|", class.parent)
     table.insert(res, M.render_markdown(text, 0, 0))
     table.insert(res, "\n")

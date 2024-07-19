@@ -277,6 +277,32 @@ foo_bar.a_plus_b({foobar})                                *foo.bar.a_plus_b()*
     ]]
     assert_funs(input, expect)
   end)
+
+  it("inlined class with parents", function()
+    local input = [[
+---@class Person
+---@field name string
+
+---@class Employee : Person
+---@inlinedoc
+---@field emp_id number
+
+--- get rekt
+---@param emp Employee
+function M.fire_employee(emp) end
+    ]]
+
+    local expect = [[
+foo_bar.fire_employee({emp})                         *foo.bar.fire_employee()*
+    get rekt
+
+    Parameters: ~
+      • {emp}  (`table`) A table with the following fields:
+               • {emp_id} (`number`)
+               • {name} (`string`)
+    ]]
+    assert_funs(input, expect)
+  end)
 end)
 
 describe("classes", function()

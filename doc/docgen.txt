@@ -53,26 +53,6 @@ docgen.run({config})                                            *docgen.run()*
                   • {fn_config}? (`docgen.FunConfig`)
 
 ==============================================================================
-PARSER                                                           docgen.parser
-
-parser.parse_str({str}, {filename})                *docgen.parser.parse_str()*
-    comment
-
-    Parameters: ~
-      • {str}       (`string`) input string
-      • {filename}  (`string`)
-
-    Return (multiple): ~
-        (`table<string, docgen.parser.class>`)
-        (`docgen.parser.fun[]`) See |docgen.parser.fun|
-        (`string[]`)
-        (`docgen.parser.alias|docgen.parser.brief|docgen.parser.class|docgen.parser.fun[]`)
-
-parser.parse({filename})                               *docgen.parser.parse()*
-    Parameters: ~
-      • {filename}  (`string`)
-
-==============================================================================
 RENDERER                                                       docgen.renderer
 
 renderer.render_classes({classes})          *docgen.renderer.render_classes()*
