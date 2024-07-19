@@ -3,18 +3,6 @@ DOCGEN                                                                  docgen
 
 Generate documentation from lua files with LuaCATS annotations + more.
 
-*docgen.Config*
-
-    Fields: ~
-      • {name}          (`string`) plugin name, will be used to generate
-                        filename, eg `docgen` -> `docgen.txt`
-      • {files}         (`string[]`) file paths to generate docs from in
-                        order
-      • {section_fmt}?  (`fun(filename: string): string`) function to
-                        generate section titles from filenames if not
-                        provided, |section_title| will be used
-      • {fn_config}?    (`docgen.FunConfig`) See |docgen.FunConfig|
-
 *docgen.FunConfig*
 
     Fields: ~
@@ -47,7 +35,7 @@ docgen.section_title({filename}, {config})            *docgen.section_title()*
                     • {section_fmt}? (`fun(filename: string): string`)
                       function to generate section titles from filenames if
                       not provided, |section_title| will be used
-                    • {fn_config}? (`docgen.FunConfig`) See |docgen.FunConfig|
+                    • {fn_config}? (`docgen.FunConfig`)
 
     Return: ~
         (`string`)
@@ -62,7 +50,7 @@ docgen.run({config})                                            *docgen.run()*
                   • {section_fmt}? (`fun(filename: string): string`) function
                     to generate section titles from filenames if not provided,
                     |section_title| will be used
-                  • {fn_config}? (`docgen.FunConfig`) See |docgen.FunConfig|
+                  • {fn_config}? (`docgen.FunConfig`)
 
 ==============================================================================
 PARSER                                                           docgen.parser
@@ -161,7 +149,7 @@ parser.parse_str({str}, {filename})                *docgen.parser.parse_str()*
         (`table<string, docgen.parser.class>`)
         (`docgen.parser.fun[]`) See |docgen.parser.fun|
         (`string[]`)
-        
+
         (`docgen.parser.alias|docgen.parser.brief|docgen.parser.class|docgen.parser.fun[]`)
 
 parser.parse({filename})                               *docgen.parser.parse()*

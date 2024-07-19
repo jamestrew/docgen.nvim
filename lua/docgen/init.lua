@@ -83,7 +83,6 @@ local function make_section(filename, config)
   }
 end
 
--- api ideas
 ---@param config docgen.Config
 M.run = function(config)
   expand_files(config.files)

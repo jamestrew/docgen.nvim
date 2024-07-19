@@ -214,7 +214,7 @@ end
 ---@param classes table<string, docgen.parser.class>
 ---@return string?
 local function render_class(class, classes)
-  if class.access or class.nodoc then return end
+  if class.access or class.nodoc or class.inlinedoc then return end
 
   local res = {}
 
@@ -246,7 +246,8 @@ end
 M.render_classes = function(classes)
   local res = {}
   for _, class in vim.spairs(classes) do
-    table.insert(res, render_class(class, classes))
+    local class_desc = render_class(class, classes)
+    if class_desc and not class_desc:match("^%s*$") then table.insert(res, class_desc) end
   end
   return table.concat(res)
 end
