@@ -6,8 +6,8 @@ local TEXT_WIDTH = 78
 local TAB_WIDTH = 4
 local TAB = string.rep(" ", TAB_WIDTH)
 
----@diagnostic disable-next-line: unused-local, unused-function
 -- luacheck: ignore 211
+---@diagnostic disable-next-line: unused-local, unused-function
 local function string_literal(str)
   str = string.gsub(str, "\n", "\\n")
   str = string.gsub(str, "\t", "\\t")
@@ -26,11 +26,11 @@ local text_wrap = function(text, start_indent, indents)
   local indent = string.rep(" ", indents)
   local line = sindent
   for word in vim.gsplit(text, "%s+") do
-    if #line + #word + 1 > TEXT_WIDTH then
+    if line == sindent then
+      line = sindent .. word
+    elseif #line + #word + 1 > TEXT_WIDTH then
       table.insert(lines, line)
       line = indent .. word
-    elseif line == sindent then
-      line = sindent .. word
     else
       line = line .. " " .. word
     end

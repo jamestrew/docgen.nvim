@@ -1,28 +1,28 @@
 local luacats_grammar = require("docgen.grammar.luacats")
 
---- @class docgen.parser.param
+--- @class (private) docgen.parser.param
 --- @field name string
 --- @field type string
 --- @field desc? string
 
---- @class docgen.parser.return
+--- @class (private) docgen.parser.return
 --- @field name string
 --- @field type string
 --- @field desc? string
 
---- @class docgen.parser.note
+--- @class (private) docgen.parser.note
 --- @field desc? string
 
---- @class docgen.parser.brief
+--- @class (private) docgen.parser.brief
 --- @field kind 'brief'
 --- @field desc? string
 
---- @class docgen.parser.alias
+--- @class (private) docgen.parser.alias
 --- @field kind 'alias'
 --- @field type string[]
 --- @field desc? string
 
---- @class docgen.parser.fun
+--- @class (private) docgen.parser.fun
 --- @field name string
 --- @field params docgen.parser.param[]
 --- @field returns docgen.parser.return[]
@@ -41,13 +41,13 @@ local luacats_grammar = require("docgen.grammar.luacats")
 --- @field notes? docgen.parser.note[]
 --- @field see? docgen.parser.note[]
 
---- @class docgen.parser.field
+--- @class (private) docgen.parser.field
 --- @field name string
 --- @field type string
 --- @field desc string
 --- @field access? 'private'|'package'|'protected'
 
---- @class docgen.parser.class
+--- @class (private) docgen.parser.class
 --- @field kind 'class'
 --- @field parent? string
 --- @field name string
@@ -58,7 +58,7 @@ local luacats_grammar = require("docgen.grammar.luacats")
 --- @field fields docgen.parser.field[]
 --- @field notes? string[]
 
---- @class docgen.parser.State
+--- @class (private) docgen.parser.State
 --- @field doc_lines? string[]
 --- @field cur_obj? docgen.parser.obj
 --- @field last_doc_item? docgen.parser.param|docgen.parser.return|docgen.parser.note

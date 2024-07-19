@@ -1,4 +1,6 @@
-.PHONY: test docgen lint
+.PHONY: test docgen lint all
+
+all: test docgen lint
 
 test:
 	nvim -l ./tests/busted.lua tests

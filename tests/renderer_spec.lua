@@ -697,4 +697,10 @@ This is useful if you want to draw a table or write some code
     ]]
     assert_md(input, expect, 4, 4)
   end)
+
+  it("one continous line", function()
+    local input = "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
+    local expect = "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
+    assert_md(input, expect)
+  end)
 end)

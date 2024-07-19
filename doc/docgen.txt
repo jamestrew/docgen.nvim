@@ -55,89 +55,6 @@ docgen.run({config})                                            *docgen.run()*
 ==============================================================================
 PARSER                                                           docgen.parser
 
-*docgen.parser.State*
-
-    Fields: ~
-      • {doc_lines}?             (`string[]`)
-      • {cur_obj}?               (`docgen.parser.obj`)
-      • {last_doc_item}?         (`docgen.parser.param|docgen.parser.return|docgen.parser.note`)
-      • {last_doc_item_indent}?  (`integer`)
-
-*docgen.parser.alias*
-
-    Fields: ~
-      • {kind}   (`'alias'`)
-      • {type}   (`string[]`)
-      • {desc}?  (`string`)
-
-*docgen.parser.brief*
-
-    Fields: ~
-      • {kind}   (`'brief'`)
-      • {desc}?  (`string`)
-
-*docgen.parser.class*
-
-    Fields: ~
-      • {kind}        (`'class'`)
-      • {parent}?     (`string`)
-      • {name}        (`string`)
-      • {desc}        (`string`)
-      • {nodoc}?      (`true`)
-      • {inlinedoc}?  (`true`)
-      • {access}?     (`'private'|'package'|'protected'`)
-      • {fields}      (`docgen.parser.field[]`) See |docgen.parser.field|
-      • {notes}?      (`string[]`)
-
-*docgen.parser.field*
-
-    Fields: ~
-      • {name}     (`string`)
-      • {type}     (`string`)
-      • {desc}     (`string`)
-      • {access}?  (`'private'|'package'|'protected'`)
-
-*docgen.parser.fun*
-
-    Fields: ~
-      • {name}         (`string`)
-      • {params}       (`docgen.parser.param[]`) See |docgen.parser.param|
-      • {returns}      (`docgen.parser.return[]`) See |docgen.parser.return|
-      • {desc}         (`string`)
-      • {access}?      (`'private'|'package'|'protected'`)
-      • {class}?       (`string`)
-      • {module}?      (`string`)
-      • {modvar}?      (`string`)
-      • {classvar}?    (`string`)
-      • {deprecated}?  (`true`)
-      • {since}?       (`string`) -- need?
-      • {attrs}?       (`string[]`) -- need?
-      • {nodoc}?       (`true`)
-      • {generics}?    (`table<string,string>`)
-      • {table}?       (`true`)
-      • {notes}?       (`docgen.parser.note[]`) See |docgen.parser.note|
-      • {see}?         (`docgen.parser.note[]`) See |docgen.parser.note|
-
-*docgen.parser.note*
-
-    Fields: ~
-      • {desc}?  (`string`)
-
-*docgen.parser.param*
-
-    Fields: ~
-      • {name}   (`string`)
-      • {type}   (`string`)
-      • {desc}?  (`string`)
-
-*docgen.parser.return*
-
-    Fields: ~
-      • {name}   (`string`)
-      • {type}   (`string`)
-      • {desc}?  (`string`)
-
-
 parser.parse_str({str}, {filename})                *docgen.parser.parse_str()*
     comment
 
@@ -149,7 +66,6 @@ parser.parse_str({str}, {filename})                *docgen.parser.parse_str()*
         (`table<string, docgen.parser.class>`)
         (`docgen.parser.fun[]`) See |docgen.parser.fun|
         (`string[]`)
-
         (`docgen.parser.alias|docgen.parser.brief|docgen.parser.class|docgen.parser.fun[]`)
 
 parser.parse({filename})                               *docgen.parser.parse()*
