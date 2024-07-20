@@ -97,9 +97,9 @@ M.run = function(config)
   end
 
   local doc_lines = {} ---@type string[]
-  for file, res in vim.spairs(file_res) do
+  for _, file in vim.spairs(config.files) do
     print("    Generating docs for:", file)
-    local classes, funs, briefs = res[1], res[2], res[3]
+    local classes, funs, briefs = file_res[file][1], file_res[file][2], file_res[file][3]
     local section = make_section(file, config)
     table.insert(doc_lines, renderer.render_section(section, briefs, funs, classes, config))
   end
