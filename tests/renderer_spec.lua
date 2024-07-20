@@ -726,7 +726,27 @@ This is useful if you want to draw a table or write some code
 
   it("one continous line", function()
     local input = "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
-    local expect = "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
+    local expect =
+      "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
     assert_md(input, expect)
+  end)
+
+  describe("text_wrap shenanigans", function()
+    it("don't split `inline code` when wrapping lines", function()
+      local input = [[
+here is a line that over 78 chars so it should be wrapped, just not at `{ a = 1, b = 2 }`. That should be kept together.
+    ]]
+      local expect = [[
+here is a line that over 78 chars so it should be wrapped, just not at
+`{ a = 1, b = 2 }`. That should be kept together.
+    ]]
+      assert_md(input, expect)
+    end)
+
+    it("`inline` shouldn't result in extra spaces", function()
+      local input = "hello `world` hello"
+      local expect = "hello `world` hello"
+      assert_md(input, expect)
+    end)
   end)
 end)

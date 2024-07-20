@@ -15,17 +15,48 @@ local function string_literal(str)
   return str
 end
 
+--- Wrap text to a given width based on indentation. Treats `inline code` as a
+--- single word to avoid splitting it during wrapping.
 ---@param text string
 ---@param start_indent integer number of spaces to indent the first line
 ---@param indents integer number of spaces to indent subsequent lines
 ---@return string
 local text_wrap = function(text, start_indent, indents)
   local lines = {}
-
   local sindent = string.rep(" ", start_indent)
   local indent = string.rep(" ", indents)
   local line = sindent
-  for word in vim.gsplit(text, "%s+") do
+
+  local i = 1
+  while i <= #text do
+    local word ---@type string
+
+    if text:sub(i, i) == "`" then
+      local code_end_idx = text:find("`", i + 1)
+      if code_end_idx then
+        word = text:sub(i, code_end_idx)
+        local _, next_word_start = text:find("%s+", code_end_idx + 1)
+        if next_word_start then
+          word = text:sub(i, next_word_start - 1)
+          i = next_word_start + 1
+        else
+          i = code_end_idx + 1
+        end
+      else
+        word = text:sub(i)
+        i = #text + 1
+      end
+    else
+      local space_start_idx, space_end_idx = text:find("%s+", i)
+      if space_start_idx then
+        word = text:sub(i, space_start_idx - 1)
+        i = space_end_idx + 1
+      else
+        word = text:sub(i)
+        i = #text + 1
+      end
+    end
+
     if line == sindent then
       line = sindent .. word
     elseif #line + #word + 1 > TEXT_WIDTH then
@@ -35,6 +66,7 @@ local text_wrap = function(text, start_indent, indents)
       line = line .. " " .. word
     end
   end
+
   table.insert(lines, line)
   return table.concat(lines, "\n")
 end
