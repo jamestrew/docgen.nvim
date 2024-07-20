@@ -338,7 +338,7 @@ describe("classes", function()
     • here's a list
       • it's nested
     >lua
-    print('hello')
+        print('hello')
     <
 
     Fields: ~
@@ -415,9 +415,9 @@ print('world')
       ]]
       local expect = [[
 >
-print('hello')
+    print('hello')
 
-print('world')
+    print('world')
 <
       ]]
       assert_md(input, expect, 0, 0)
@@ -435,10 +435,10 @@ print('world')
       ]]
       local expect = [[
 >lua
-print('hello')
+    print('hello')
 
 
-print('world')
+    print('world')
 <
       ]]
       assert_md(input, expect)
@@ -456,10 +456,10 @@ print('world')
       ]]
       local expect = [[
     >lua
-    print('hello')
+        print('hello')
 
 
-    print('world')
+        print('world')
     <
       ]]
       assert_md(input, expect, 4, 4)
@@ -649,7 +649,7 @@ This is useful if you want to draw a table or write some code
       local expect = [[
 • item 1
   >lua
-  print('hello')
+      print('hello')
   <
   • nested 1
 • item 2
@@ -678,7 +678,7 @@ This is useful if you want to draw a table or write some code
     10. nested 2
     •   nested 2
         >lua
-        print('hello')
+            print('hello')
         <
 10. item 2
       ]]
@@ -690,7 +690,7 @@ This is useful if you want to draw a table or write some code
         10. nested 2
         •   nested 2
             >lua
-            print('hello')
+                print('hello')
             <
     10. item 2
       ]]
@@ -702,7 +702,7 @@ This is useful if you want to draw a table or write some code
             10. nested 2
             •   nested 2
                 >lua
-                print('hello')
+                    print('hello')
                 <
         10. item 2
       ]]
@@ -718,7 +718,7 @@ This is useful if you want to draw a table or write some code
     • here's a list
       • it's nested
     >lua
-    print('hello')
+        print('hello')
     <
     ]]
     assert_md(input, expect, 4, 4)

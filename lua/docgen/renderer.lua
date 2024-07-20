@@ -554,7 +554,7 @@ M._render_markdown = function(markdown, start_indent, indent, list_marker_size)
       ---@cast block docgen.grammar.markdown.code_block
       table.insert(res, string.format("%s>%s\n", tabs, block.lang or ""))
       for line in vim.gsplit(vim.trim(block.code):gsub("\n$", ""), "\n") do
-        table.insert(res, tabs .. line .. "\n")
+        table.insert(res, string.format("%s%s%s\n", tabs, TAB, line))
       end
       table.insert(res, string.format("%s<\n", tabs))
     elseif block.kind == "pre" then
