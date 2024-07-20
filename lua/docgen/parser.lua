@@ -428,7 +428,10 @@ function M.parse_str(str, filename)
     local has_indent = line:match("^%s+") ~= nil
     line = vim.trim(line)
     if vim.startswith(line, "---") then
-      process_doc_line(line, state)
+      local ok, res = pcall(process_doc_line, line, state)
+      if not ok then
+        error(string.format("Error processing %s @ line: %s\n%s", filename, line, res))
+      end
     else
       add_doc_lines_to_obj(state)
 
