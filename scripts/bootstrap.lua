@@ -1,3 +1,14 @@
+--[[
+Usage:
+```lua
+load(vim.fn.system("curl -s https://raw.githubusercontent.com/jamestrew/docgen.nvim/master/scripts/bootstrap.lua"))()
+
+require("docgen").run({
+  ...
+})
+```
+]]
+
 if vim.env.DOCGEN_PATH and not vim.uv.fs_stat(vim.env.DOCGEN_PATH) then
   vim.env.DOCGEN_PATH = nil
 end
