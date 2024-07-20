@@ -604,11 +604,12 @@ end
 M.render_section = function(section, briefs, funs, classes, config)
   local res = {}
 
+  local brief_tag = string.format("*%s*", section.tag)
   table.insert(res, string.rep("=", TEXT_WIDTH))
   table.insert(res, "\n")
   table.insert(
     res,
-    string.format("%s%" .. (TEXT_WIDTH - #section.title) .. "s\n", section.title, section.tag)
+    string.format("%s%" .. (TEXT_WIDTH - #section.title) .. "s\n", section.title, brief_tag)
   )
 
   local briefs_text = M.render_briefs(briefs)

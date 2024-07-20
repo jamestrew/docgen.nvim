@@ -1,5 +1,5 @@
 ==============================================================================
-DOCGEN                                                                  docgen
+DOCGEN                                                                *docgen*
 
 Generate documentation from lua files with LuaCATS annotations + more.
 
@@ -53,7 +53,7 @@ docgen.run({config})                                            *docgen.run()*
                   • {fn_config}? (`docgen.FunConfig`)
 
 ==============================================================================
-RENDERER                                                       docgen.renderer
+RENDERER                                                     *docgen.renderer*
 
 renderer.render_classes({classes})          *docgen.renderer.render_classes()*
     Parameters: ~
