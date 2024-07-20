@@ -192,7 +192,7 @@ parser.ol = Cg(ol_marker, "listtype")
     return {
       kind = "ol",
       items = items,
-      start = (C(num) / tonumber):match(start),
+      start = (C(num ^ 1) / tonumber):match(start),
       tight = tight,
     }
   end
