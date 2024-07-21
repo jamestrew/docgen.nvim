@@ -295,16 +295,6 @@ local function render_class(class, classes)
     if not parent then
       error(string.format("Parent class %s of %s is not found", class.parent, class.name))
     end
-    if parent.access or parent.nodoc then
-      error(
-        string.format(
-          "Parent class %s of %s is not to be documented.\n"
-            .. "Use `---@inlinedoc` or remove `---@nodoc` or access modifiers.",
-          class.parent,
-          class.name
-        )
-      )
-    end
     if parent.inlinedoc then
       resolve_class_parents(class, classes)
     else
