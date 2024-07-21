@@ -282,6 +282,9 @@ foo_bar.a_plus_b({foobar})                                *foo.bar.a_plus_b()*
     local input = [[
 ---@class Person
 ---@field name string
+---@field _private_field_1 string kinda private field
+---@field private private_field_2 string actually private
+---@field height number
 
 ---@class Employee : Person
 ---@inlinedoc
@@ -300,6 +303,7 @@ foo_bar.fire_employee({emp})                         *foo.bar.fire_employee()*
       • {emp}  (`table`) A table with the following fields:
                • {emp_id} (`number`)
                • {name} (`string`)
+               • {height} (`number`)
     ]]
     assert_funs(input, expect)
   end)

@@ -134,11 +134,14 @@ local function resolve_class_parents(class, classes)
   if not class.parent then return end
 
   local parents = {} ---@type string[]
+
   local cls = class
-  repeat
-    table.insert(parents, cls.parent)
-    cls = classes[cls.parent]
-  until not cls or not cls.parent
+  while classes[cls.parent] do
+    local parent = classes[class.parent] ---@type docgen.parser.class
+    if parent.nodoc or parent.access then break end
+    table.insert(parents, parent.name)
+    cls = parent
+  end
 
   for _, c in ipairs(parents) do
     local child_fields = vim
@@ -203,7 +206,7 @@ local function inline_type(obj, classes)
   resolve_class_parents(cls, classes)
   local cls_descs = {}
   for _, field in ipairs(cls.fields) do
-    if not field.access then
+    if not field.access and not vim.startswith(field.name, "_") then
       local fdesc, fdefault = get_default(field.desc)
       local field_ty = render_type(field.type, nil, fdefault)
       local field_name = format_field_name(field.name)
