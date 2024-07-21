@@ -9,19 +9,16 @@ require("docgen").run({
 ```
 ]]
 
-if vim.env.DOCGEN_PATH and not vim.uv.fs_stat(vim.env.DOCGEN_PATH) then
-  vim.env.DOCGEN_PATH = nil
-end
-
 local docgen_path = vim.env.DOCGEN_PATH or ".docgen"
-if not vim.env.DOCGEN_PATH and not vim.uv.fs_stat(docgen_path) then
+local docgen_repo = "https://github.com/jamestrew/docgen.nvim.git"
+
+if not vim.uv.fs_stat(docgen_path) then
   vim.api.nvim_echo({
     {
       "Cloning docgen.nvim\n\n",
       "DiagnosticInfo",
     },
   }, true, {})
-  local docgen_repo = "https://github.com/jamestrew/docgen.nvim.git"
   local ok, out = pcall(vim.fn.system, {
     "git",
     "clone",
