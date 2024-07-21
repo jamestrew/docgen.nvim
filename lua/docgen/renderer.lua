@@ -305,14 +305,14 @@ local function render_class(class, classes)
         )
       )
     end
-    if not parent.inlinedoc then
+    if parent.inlinedoc then
+      resolve_class_parents(class, classes)
+    else
       local text = string.format("Extends |%s|", class.parent)
       table.insert(res, M.render_markdown(text, 0, 0))
       table.insert(res, "\n")
     end
   end
-
-  resolve_class_parents(class, classes)
 
   if class.desc then
     table.insert(res, M.render_markdown(class.desc, TAB_WIDTH, TAB_WIDTH))
