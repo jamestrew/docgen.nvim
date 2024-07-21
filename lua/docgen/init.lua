@@ -101,7 +101,10 @@ M.run = function(config)
     print("    Generating docs for:", file)
     local classes, funs, briefs = file_res[file][1], file_res[file][2], file_res[file][3]
     local section = make_section(file, config)
-    table.insert(doc_lines, renderer.render_section(section, briefs, funs, classes, config))
+    table.insert(
+      doc_lines,
+      renderer.render_section(section, briefs, funs, classes, all_classes, config)
+    )
   end
 
   renderer.append_modeline(doc_lines)

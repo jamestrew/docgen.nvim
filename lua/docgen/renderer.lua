@@ -131,13 +131,11 @@ end
 ---@param class docgen.parser.class
 ---@param classes table<string, docgen.parser.class>
 local function resolve_class_parents(class, classes)
-  if not class.parent then return end
-
   local parents = {} ---@type string[]
 
   local cls = class
-  while classes[cls.parent] do
-    local parent = classes[class.parent] ---@type docgen.parser.class
+  while cls.parent and classes[cls.parent] do
+    local parent = classes[cls.parent] ---@type docgen.parser.class
     if parent.nodoc or parent.access then break end
     table.insert(parents, parent.name)
     cls = parent
@@ -283,16 +281,10 @@ local function render_fields_or_params(objs, generics, classes)
 end
 
 ---@param class docgen.parser.class
----@return boolean
-local function skip_class_gen(class)
-  return not not (class.access or class.nodoc or class.inlinedoc)
-end
-
----@param class docgen.parser.class
 ---@param classes table<string, docgen.parser.class>
 ---@return string?
 local function render_class(class, classes)
-  if skip_class_gen(class) then return end
+  if class.access or class.nodoc or class.inlinedoc then return end
 
   local res = {}
 
@@ -303,7 +295,7 @@ local function render_class(class, classes)
     if not parent then
       error(string.format("Parent class %s of %s is not found", class.parent, class.name))
     end
-    if skip_class_gen(parent) then
+    if parent.access or parent.nodoc then
       error(
         string.format(
           "Parent class %s of %s is not to be documented.\n"
@@ -313,10 +305,14 @@ local function render_class(class, classes)
         )
       )
     end
-    local text = string.format("Extends |%s|", class.parent)
-    table.insert(res, M.render_markdown(text, 0, 0))
-    table.insert(res, "\n")
+    if not parent.inlinedoc then
+      local text = string.format("Extends |%s|", class.parent)
+      table.insert(res, M.render_markdown(text, 0, 0))
+      table.insert(res, "\n")
+    end
   end
+
+  resolve_class_parents(class, classes)
 
   if class.desc then
     table.insert(res, M.render_markdown(class.desc, TAB_WIDTH, TAB_WIDTH))
@@ -334,11 +330,12 @@ local function render_class(class, classes)
 end
 
 ---@param classes table<string, docgen.parser.class>
+---@param all_classes table<string, docgen.parser.class>
 ---@return string
-M.render_classes = function(classes)
+M.render_classes = function(classes, all_classes)
   local res = {}
   for _, class in vim.spairs(classes) do
-    local class_desc = render_class(class, classes)
+    local class_desc = render_class(class, all_classes)
     if class_desc and not class_desc:match("^%s*$") then table.insert(res, class_desc) end
   end
   return table.concat(res)
@@ -634,9 +631,10 @@ end
 ---@param briefs string[]
 ---@param funs docgen.parser.fun[]
 ---@param classes table<string, docgen.parser.class>
+---@param all_classes table<string, docgen.parser.class>
 ---@param config docgen.Config
 ---@return string
-M.render_section = function(section, briefs, funs, classes, config)
+M.render_section = function(section, briefs, funs, classes, all_classes, config)
   local res = {}
 
   local brief_tag = string.format("*%s*", section.tag)
@@ -654,7 +652,7 @@ M.render_section = function(section, briefs, funs, classes, config)
     table.insert(res, "\n")
   end
 
-  local classes_text = M.render_classes(classes)
+  local classes_text = M.render_classes(classes, all_classes)
   if not classes_text:match("^%s*$") then
     table.insert(res, "\n")
     table.insert(res, classes_text)
