@@ -122,6 +122,8 @@ end
 local function get_default(desc)
   if not desc then return "", nil end
 
+  -- TODO: capture `)` if inside backticks
+  -- eg: `(default: `vim.loop.cwd()`)`  ->  `vim.loop.cwd()`
   local default = desc:match("\n?%s*%([dD]efault: *([^)]+)%)$")
   if default then desc = desc:gsub("\n?%s*%([dD]efault: *[^)]+%)$", "") end
 
