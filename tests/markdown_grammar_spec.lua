@@ -15,7 +15,7 @@ end
 ---@param expect table
 local assert_block = function(input, expect)
   local match = markdown.parse_markdown(input)
-  assert.are.same(expect, match, inspect_diff(expect, match))
+  assert.same(expect, match, inspect_diff(expect, match))
 end
 
 describe("paragraphs", function()

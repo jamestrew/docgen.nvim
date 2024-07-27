@@ -350,7 +350,7 @@ local function render_fun_header(fun, section)
   local proto = fun.table and name or string.format("%s(%s)", name, param_str)
 
   local fn_suffix = fun.table and "" or "()"
-  local tag -- TODO: need to figure out permenant solution for this (ie config for `---@tag`)
+  local tag
   if fun.classvar then
     tag = string.format("*%s:%s%s*", fun.classvar, fun.name, fn_suffix)
   else
@@ -395,7 +395,7 @@ end
 
 ---@param fun docgen.parser.fun
 ---@param config? docgen.FunConfig
-local function xform_fn_name(fun, config)
+local function xform_fn(fun, config)
   if config and config.fn_xform then
     config.fn_xform(fun)
     return
@@ -414,7 +414,7 @@ local function render_fun(fun, classes, section, config)
   local res = {}
   local bullet_offset = TAB_WIDTH * 2
 
-  xform_fn_name(fun, config)
+  xform_fn(fun, config)
 
   table.insert(res, render_fun_header(fun, section))
   table.insert(res, "\n")

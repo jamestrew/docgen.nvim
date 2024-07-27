@@ -7,7 +7,7 @@ describe("class", function()
   local function test(name, text, exp)
     exp = vim.deepcopy(exp, true)
     it(name, function()
-      assert.are.same(exp, parser.parse_str(text, "myfile.lua"))
+      assert.same(exp, parser.parse_str(text, "myfile.lua"))
     end)
   end
 
@@ -102,15 +102,3 @@ describe("class", function()
   )
 end)
 
-describe("param", function()
-  --- @param name string
-  --- @param text string
-  --- @param exp table
-  local function test(name, text, exp)
-    local _, actual, _, _ = parser.parse_str(text, "myfile.lua")
-    it(name, function()
-      assert.are.same(#exp, #actual)
-      assert.are.same(exp, actual)
-    end)
-  end
-end)

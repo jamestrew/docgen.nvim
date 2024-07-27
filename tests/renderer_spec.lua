@@ -37,7 +37,7 @@ local function assert_lines(expect, actual, other)
     if not passes then break end
   end
 
-  if not passes then assert.are.same(expect, actual, inspect_diff(expect, actual, other)) end
+  if not passes then assert.same(expect, actual, inspect_diff(expect, actual, other)) end
 end
 
 describe("functions", function()
@@ -314,7 +314,7 @@ describe("classes", function()
     input = string.format("local M = {}\n%s\nreturn M\n", input)
     expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
     local classes, _, _, _ = parser.parse_str(input, "foo.lua")
-    local actual = renderer.render_classes(classes):gsub("[ \n]+$", "")
+    local actual = renderer.render_classes(classes, classes):gsub("[ \n]+$", "")
     assert_lines(expect, actual, { classes = classes })
   end
 

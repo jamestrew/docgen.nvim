@@ -4,7 +4,7 @@ local grammar = require("docgen.grammar.luacats")
 --- @param exp table<string,string>
 local function test(text, exp)
   it(string.format("can parse %q", text), function()
-    assert.are.same(exp, grammar:match(text))
+    assert.same(exp, grammar:match(text))
   end)
 end
 
