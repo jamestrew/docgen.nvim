@@ -1,60 +1,41 @@
 ==============================================================================
-LUA                                                               *docgen.lua*
+DOCGEN                                                                *docgen*
 
 Generate documentation from lua files with LuaCATS annotations + more.
 
 *docgen.FileSection*
 
     Fields: ~
-      • {path}           (`string`) filepath from which to generate the
-                         section from
-      • {section_title}  (`string?`) title of the section, if omitted,
-                         generated from the filename
-      • {section_tag}    (`string?`) help tag of the section, if omitted,
-                         generated from the filename
+      • {[1]}        (`string`) filepath from which to generate the section
+                     from
+      • {title}      (`string?`) title of the section
 
-*docgen.FunConfig*
+                     if omitted, generated from the filename eg:
+                     • './lua/telescope/init.lua' -> 'TELESCOPE'
+                     • './lua/telescope/actions/init.lua' -> 'ACTIONS'
+                     • './lua/telescope/actions/set.lua' -> 'ACTIONS_SET'
+      • {tag}        (`string?`) help tag of the section WITHOUT the
+                     asterisks
 
-    Fields: ~
-      • {fn_xform}?  (`fun(fn: docgen.parser.fun)`)
+                     if omitted, generated from the filename eg:
+                     • './lua/telescope/init.lua' -> 'telescope'
+                     • './lua/telescope/actions/init.lua' ->
+                       'telescope.actions'
+                     • './lua/telescope/actions/set.lua' ->
+                       'telescope.actions.set'
+      • {fn_prefix}  (`string?`) module prefix for functions
 
-*docgen.section*
-
-    Fields: ~
-      • {title}      (`string`)
-      • {tag}        (`string`)
-      • {fn_prefix}  (`string`)
+                     if omitted, generated from the filename same as
+                     `section_title` but in lowercase
 
 
-lua.section_title({filename})                     *docgen.lua.section_title()*
-    Generate a section title from the filename by joining the useful module
-    name using underscores and uppercasing everything.
-
-    eg:
-    • './lua/telescope/init.lua' -> 'TELESCOPE'
-    • './lua/telescope/actions/init.lua' -> 'ACTIONS'
-    • './lua/telescope/actions/set.lua' -> 'ACTIONS_SET'
-
-    Parameters: ~
-      • {filename}  (`string`)
-
-    Return: ~
-        (`string`)
-
-lua.M.section_tag()                               *docgen.lua.M.section_tag()*
-lua.run({config})                                           *docgen.lua.run()*
+docgen.run({config})                                            *docgen.run()*
     Parameters: ~
       • {config}  (`table`) A table with the following fields:
                   • {name} (`string`) plugin name, will be used to generate
                     filename, eg `docgen` -> `docgen.txt`
-                  • {files} (`string[]`) file paths to generate docs from in
-                    order
-                  • {section_title}? (`fun(filename: string): string`)
-                    function to generate section titles from filenames if not
-                    provided, |section_title| will be used
-                  • {section_tag}? (`fun(filename: string): string`) function
-                    to generate section tags from filenames
-                  • {fn_config}? (`docgen.FunConfig`)
+                  • {files} (`string|docgen.FileSection`) file paths/config to
+                    generate docs from in order
 
 ==============================================================================
 RENDERER                                                     *docgen.renderer*

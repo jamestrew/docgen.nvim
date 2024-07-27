@@ -14,19 +14,12 @@ local M = {}
 ---
 --- file paths/config to generate docs from in order
 ---@field files (string|docgen.FileSection)[]
----
---- function to generate section titles from filenames
---- if not provided, |section_title| will be used
----@field section_title? fun(filename: string): string
----
---- function to generate section tags from filenames
----@field section_tag? fun(filename: string): string
----
----@field fn_config? docgen.FunConfig
 
+---@nodoc
 ---@class docgen.FunConfig
 ---@field fn_xform? fun(fn: docgen.parser.fun)
 
+---@nodoc
 ---@class docgen.section
 ---@field title string
 ---@field tag string
