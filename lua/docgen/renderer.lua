@@ -506,6 +506,7 @@ end
 ---@param lines string[]
 ---@param tabs string
 local function render_code_block(code_block, lines, tabs)
+  tabs = tabs == "" and TAB or tabs
   local last_line = lines[#lines]
   if last_line and not last_line:match("^[ \n]*$") then
     lines[#lines] = last_line:gsub("[ \n]*$", "")
@@ -514,7 +515,7 @@ local function render_code_block(code_block, lines, tabs)
 
   table.insert(lines, string.format(">%s\n", code_block.lang or ""))
   for line in vim.gsplit(code_block.code:gsub("\n$", ""), "\n") do
-    table.insert(lines, string.format("%s%s%s\n", tabs, TAB, line))
+    table.insert(lines, string.format("%s%s\n", tabs, line))
   end
   table.insert(lines, "<\n")
 end
@@ -524,7 +525,8 @@ end
 ---@param start_indent integer
 ---@param indent integer
 ---@param list_marker_size integer?
-local function render_ul(ul, lines, start_indent, indent, list_marker_size)
+---@param list_depth integer
+local function render_ul(ul, lines, start_indent, indent, list_marker_size, list_depth)
   list_marker_size = list_marker_size or 2 -- len('• ')
   local sep = ul.tight and "\n" or "\n\n"
 
@@ -536,7 +538,8 @@ local function render_ul(ul, lines, start_indent, indent, list_marker_size)
       items,
       indent + list_marker_size,
       indent + list_marker_size,
-      list_marker_size
+      list_marker_size,
+      list_depth + 1
     ):gsub("^ *", "")
 
     table.insert(lines, string.format("%s%s%s", marker, list_item, sep))
@@ -548,7 +551,8 @@ end
 ---@param lines string[]
 ---@param start_indent integer
 ---@param indent integer
-local function render_ol(ol, lines, start_indent, indent)
+---@param list_depth integer
+local function render_ol(ol, lines, start_indent, indent, list_depth)
   local sep = ol.tight and "\n" or "\n\n"
 
   local max_marker = ol.start + #ol.items - 1
@@ -568,7 +572,8 @@ local function render_ol(ol, lines, start_indent, indent)
       items,
       indent + list_marker_size,
       indent + list_marker_size,
-      list_marker_size
+      list_marker_size,
+      list_depth + 1
     ):gsub("^ *", "")
 
     table.insert(lines, string.format("%s%s%s", marker, list_item, sep))
@@ -576,12 +581,26 @@ local function render_ol(ol, lines, start_indent, indent)
   end
 end
 
+---@param next_block docgen.grammar.markdown.result
+---@param list_depth integer
+---@return boolean
+local function list_end(next_block, list_depth)
+  if not next_block then return true end
+
+  if next_block.kind == "ul" or next_block.kind == "ol" then
+    return list_depth == 0
+  end
+  return true
+end
+
 ---@param markdown docgen.grammar.markdown.result[]
 ---@param start_indent integer indentation amount for the first line
 ---@param indent integer indentation amount for subsequent lines
 ---@param list_marker_size integer? size of list marker including alignment padding minus indentation
+---@param list_depth integer?
 ---@return string
-M._render_markdown = function(markdown, start_indent, indent, list_marker_size)
+M._render_markdown = function(markdown, start_indent, indent, list_marker_size, list_depth)
+  list_depth = list_depth or 0
   local res = {} ---@type string[]
 
   for i, block in ipairs(markdown) do
@@ -601,10 +620,12 @@ M._render_markdown = function(markdown, start_indent, indent, list_marker_size)
       end
     elseif block.kind == "ul" then
       ---@cast block docgen.grammar.markdown.ul
-      render_ul(block, res, start_indent, indent, list_marker_size)
+      render_ul(block, res, start_indent, indent, list_marker_size, list_depth)
+      if list_end(next_block, list_depth) then table.insert(res, "\n") end
     elseif block.kind == "ol" then
       ---@cast block docgen.grammar.markdown.ol
-      render_ol(block, res, start_indent, indent)
+      render_ol(block, res, start_indent, indent, list_depth)
+      if list_end(next_block, list_depth) then table.insert(res, "\n") end
     end
 
     start_indent = indent

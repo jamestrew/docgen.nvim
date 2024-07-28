@@ -340,8 +340,10 @@ describe("classes", function()
 *Foobar*
     some description about Foobar
     • here's a list
-      • it's nested >lua
-        print('hello')
+      • it's nested
+
+>lua
+    print('hello')
 <
 
     Fields: ~
@@ -464,10 +466,10 @@ print('world')
       local expect = [[
 >lua
 
-        print('hello')
+    print('hello')
 
 
-        print('world')
+    print('world')
 <
       ]]
       assert_md(input, expect, 4, 4)
@@ -656,10 +658,27 @@ This is useful if you want to draw a table or write some code
       ]]
       local expect = [[
 • item 1 >lua
-      print('hello')
+  print('hello')
 <
   • nested 1
 • item 2
+      ]]
+      assert_md(input, expect)
+    end)
+
+    it("paragraph follows", function()
+      local input = [[
+- item 1
+- item 2
+
+new paragraph
+      ]]
+
+      local expect = [[
+• item 1
+• item 2
+
+new paragraph
       ]]
       assert_md(input, expect)
     end)
@@ -684,7 +703,7 @@ This is useful if you want to draw a table or write some code
     9.  nested 1
     10. nested 2
     •   nested 2 >lua
-            print('hello')
+        print('hello')
 <
 10. item 2
       ]]
@@ -695,7 +714,7 @@ This is useful if you want to draw a table or write some code
         9.  nested 1
         10. nested 2
         •   nested 2 >lua
-                print('hello')
+            print('hello')
 <
     10. item 2
       ]]
@@ -706,11 +725,25 @@ This is useful if you want to draw a table or write some code
             9.  nested 1
             10. nested 2
             •   nested 2 >lua
-                    print('hello')
+                print('hello')
 <
         10. item 2
       ]]
       assert_md(input, expect, 4, 8)
+    end)
+
+    it("ul then ol", function()
+      local input = [[
+- item 1
+1. item 1
+      ]]
+
+      local expect = [[
+• item 1
+
+1. item 1
+      ]]
+      assert_md(input, expect)
     end)
   end)
 
@@ -720,8 +753,10 @@ This is useful if you want to draw a table or write some code
     local expect = [[
     some description about Foobar
     • here's a list
-      • it's nested >lua
-        print('hello')
+      • it's nested
+
+>lua
+    print('hello')
 <
     ]]
     assert_md(input, expect, 4, 4)
