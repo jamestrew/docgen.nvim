@@ -502,6 +502,23 @@ local function render_paragraph(paragraph, start_indent, indents, next_block)
   return table.concat(res)
 end
 
+---@param code_block docgen.grammar.markdown.code_block
+---@param lines string[]
+---@param tabs string
+local function render_code_block(code_block, lines, tabs)
+  local last_line = lines[#lines]
+  if last_line and not last_line:match("^[ \n]*$") then
+    lines[#lines] = last_line:gsub("[ \n]*$", "")
+    table.insert(lines, " ")
+  end
+
+  table.insert(lines, string.format(">%s\n", code_block.lang or ""))
+  for line in vim.gsplit(code_block.code:gsub("\n$", ""), "\n") do
+    table.insert(lines, string.format("%s%s%s\n", tabs, TAB, line))
+  end
+  table.insert(lines, "<\n")
+end
+
 ---@param ul docgen.grammar.markdown.ul
 ---@param lines string[]
 ---@param start_indent integer
@@ -576,11 +593,7 @@ M._render_markdown = function(markdown, start_indent, indent, list_marker_size)
       table.insert(res, render_paragraph(block.text, start_indent, indent, next_block))
     elseif block.kind == "code" then
       ---@cast block docgen.grammar.markdown.code_block
-      table.insert(res, string.format("%s>%s\n", tabs, block.lang or ""))
-      for line in vim.gsplit(vim.trim(block.code):gsub("\n$", ""), "\n") do
-        table.insert(res, string.format("%s%s%s\n", tabs, TAB, line))
-      end
-      table.insert(res, string.format("%s<\n", tabs))
+      render_code_block(block, res, tabs)
     elseif block.kind == "pre" then
       ---@cast block docgen.grammar.markdown.pre_block
       for line in vim.gsplit(vim.trim(block.lines):gsub("\n$", ""), "\n") do
@@ -624,9 +637,8 @@ end
 ---@param funs docgen.parser.fun[]
 ---@param classes table<string, docgen.parser.class>
 ---@param all_classes table<string, docgen.parser.class>
----@param config docgen.Config
 ---@return string
-M.render_section = function(section, briefs, funs, classes, all_classes, config)
+M.render_section = function(section, briefs, funs, classes, all_classes)
   local res = {}
 
   local brief_tag = string.format("*%s*", section.tag)
@@ -650,7 +662,7 @@ M.render_section = function(section, briefs, funs, classes, all_classes, config)
     table.insert(res, classes_text)
   end
 
-  local funs_text = M.render_funs(funs, classes, section, config.fn_config)
+  local funs_text = M.render_funs(funs, classes, section)
   if not funs_text:match("^%s*$") then
     table.insert(res, "\n")
     table.insert(res, funs_text)

@@ -120,10 +120,7 @@ M.run = function(config)
     local classes, funs, briefs =
       file_res[filepath][1], file_res[filepath][2], file_res[filepath][3]
     local section = make_section(file, config)
-    table.insert(
-      doc_lines,
-      renderer.render_section(section, briefs, funs, classes, all_classes, config)
-    )
+    table.insert(doc_lines, renderer.render_section(section, briefs, funs, classes, all_classes))
   end
 
   renderer.append_modeline(doc_lines)

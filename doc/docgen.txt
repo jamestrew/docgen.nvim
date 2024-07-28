@@ -1,5 +1,5 @@
 ==============================================================================
-DOCGEN                                                                *docgen*
+DOCGEN                                                           *docgen.nvim*
 
 Generate documentation from lua files with LuaCATS annotations + more.
 
@@ -29,7 +29,7 @@ Generate documentation from lua files with LuaCATS annotations + more.
                      `section_title` but in lowercase
 
 
-docgen.run({config})                                            *docgen.run()*
+docgen.run({config})                                       *docgen.nvim.run()*
     Parameters: ~
       • {config}  (`table`) A table with the following fields:
                   • {name} (`string`) plugin name, will be used to generate
@@ -78,14 +78,13 @@ renderer.render_briefs({briefs})             *docgen.renderer.render_briefs()*
         (`string`)
 
                                             *docgen.renderer.render_section()*
-renderer.render_section({section}, {briefs}, {funs}, {classes}, {all_classes}, {config})
+renderer.render_section({section}, {briefs}, {funs}, {classes}, {all_classes})
     Parameters: ~
       • {section}      (`docgen.section`)
       • {briefs}       (`string[]`)
       • {funs}         (`docgen.parser.fun[]`)
       • {classes}      (`table<string, docgen.parser.class>`)
       • {all_classes}  (`table<string, docgen.parser.class>`)
-      • {config}       (`docgen.Config`)
 
     Return: ~
         (`string`)

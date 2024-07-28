@@ -340,10 +340,9 @@ describe("classes", function()
 *Foobar*
     some description about Foobar
     • here's a list
-      • it's nested
-    >lua
+      • it's nested >lua
         print('hello')
-    <
+<
 
     Fields: ~
       • {a}   (`string`)
@@ -412,6 +411,7 @@ another paragraph for the `y` parameter. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBB
       local input = [[
 ```
 
+    print('weird indent')
 print('hello')
 
 print('world')
@@ -419,6 +419,8 @@ print('world')
       ]]
       local expect = [[
 >
+
+        print('weird indent')
     print('hello')
 
     print('world')
@@ -439,6 +441,7 @@ print('world')
       ]]
       local expect = [[
 >lua
+
     print('hello')
 
 
@@ -459,12 +462,13 @@ print('world')
 ```
       ]]
       local expect = [[
-    >lua
+>lua
+
         print('hello')
 
 
         print('world')
-    <
+<
       ]]
       assert_md(input, expect, 4, 4)
     end)
@@ -651,10 +655,9 @@ This is useful if you want to draw a table or write some code
 - item 2
       ]]
       local expect = [[
-• item 1
-  >lua
+• item 1 >lua
       print('hello')
-  <
+<
   • nested 1
 • item 2
       ]]
@@ -680,10 +683,9 @@ This is useful if you want to draw a table or write some code
 9.  item 1
     9.  nested 1
     10. nested 2
-    •   nested 2
-        >lua
+    •   nested 2 >lua
             print('hello')
-        <
+<
 10. item 2
       ]]
       assert_md(input, expect)
@@ -692,10 +694,9 @@ This is useful if you want to draw a table or write some code
     9.  item 1
         9.  nested 1
         10. nested 2
-        •   nested 2
-            >lua
+        •   nested 2 >lua
                 print('hello')
-            <
+<
     10. item 2
       ]]
       assert_md(input, expect, 4, 4)
@@ -704,10 +705,9 @@ This is useful if you want to draw a table or write some code
     9.  item 1
             9.  nested 1
             10. nested 2
-            •   nested 2
-                >lua
+            •   nested 2 >lua
                     print('hello')
-                <
+<
         10. item 2
       ]]
       assert_md(input, expect, 4, 8)
@@ -720,10 +720,9 @@ This is useful if you want to draw a table or write some code
     local expect = [[
     some description about Foobar
     • here's a list
-      • it's nested
-    >lua
+      • it's nested >lua
         print('hello')
-    <
+<
     ]]
     assert_md(input, expect, 4, 4)
   end)
