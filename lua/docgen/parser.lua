@@ -398,6 +398,19 @@ local function commit_obj(obj, classes, funs, briefs, uncommitted)
   return commit
 end
 
+---@param lines string[]
+---@param idx integer
+---@return integer # line index after skipping the multiline comment
+local function skip_multiline_comment(lines, idx)
+  if lines[idx]:match("^ *%-%-%[%[") then
+    while lines[idx] and not lines[idx]:match("]]") do
+      idx = idx + 1
+      assert(idx < #lines, "Unterminated multiline comment")
+    end
+  end
+  return idx
+end
+
 local M = {}
 
 ---comment
@@ -411,6 +424,8 @@ function M.parse_str(str, filename)
   local funs = {} --- @type docgen.parser.fun[]
   local classes = {} --- @type table<string,docgen.parser.class>
   local briefs = {} --- @type docgen.grammar.markdown.result[]
+  -- Keep track of any partial objects we don't commit
+  local uncommitted = {} --- @type docgen.parser.obj[]
 
   local mod_return = determine_modvar(str)
 
@@ -421,10 +436,13 @@ function M.parse_str(str, filename)
   local classvars = {} --- @type table<string,string>
   local state = {} --- @type docgen.parser.State
 
-  -- Keep track of any partial objects we don't commit
-  local uncommitted = {} --- @type docgen.parser.obj[]
+  local lines = vim.split(str, "\n")
 
-  for line in vim.gsplit(str, "\n") do
+  local i = 1
+  while i <= #lines do
+    i = skip_multiline_comment(lines, i)
+    local line = lines[i]
+
     local has_indent = line:match("^%s+") ~= nil
     line = vim.trim(line)
     if vim.startswith(line, "---") then
@@ -453,6 +471,7 @@ function M.parse_str(str, filename)
 
       state = {}
     end
+    i = i + 1
   end
 
   return classes, funs, briefs, uncommitted

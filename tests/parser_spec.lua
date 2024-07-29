@@ -102,3 +102,20 @@ describe("class", function()
   )
 end)
 
+local function assert_fun(input, expect)
+  local _, actual, _, _ = parser.parse_str(input, "myfile.lua")
+  assert.same(expect, actual)
+end
+
+it("ignores multi-line comments", function()
+  local input = [==[
+local M = {}
+--[[
+function M.myfunc() end
+]]
+return M
+  ]==]
+  local expect = {}
+  assert_fun(input, expect)
+end)
+
