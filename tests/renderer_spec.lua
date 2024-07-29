@@ -97,6 +97,9 @@ foo_bar.foo({x}, {y})                                          *foo.bar.foo()*
 
 foo_bar.bar()                                                  *foo.bar.bar()*
     another one
+
+foo_bar.baz()                                                  *foo.bar.baz()*
+    different format
 ]]
 
     assert_funs(input, expect)
@@ -112,6 +115,10 @@ M.foo = function(x, y) return 'foo' + x end
 ---@param a integer
 ---@return integer
 M._bar = function(a) return a end
+
+M.baz = function() end
+
+function M.qux() end
     ]]
 
     local inputs = {

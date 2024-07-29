@@ -62,6 +62,5 @@ M.fill = M.opt(M.spacing1)
 M.any = lpeg.P(1)
 M.num = lpeg.R("09")
 M.letter = lpeg.R("az", "AZ") + lpeg.S("_$")
-M.foo = 23
 
 return M

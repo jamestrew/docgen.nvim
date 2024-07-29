@@ -1,4 +1,5 @@
 local luacats_grammar = require("docgen.grammar.luacats")
+local lua_grammar = require("docgen.grammar.lua")
 
 --- @class (private) docgen.parser.param
 --- @field name string
@@ -140,7 +141,7 @@ local function process_doc_line(line, state)
     cur_obj.fields = {}
   elseif kind == "field" then
     --- @cast parsed docgen.grammar.luacats.Field
-    parsed.desc = parsed.desc or state.doc_lines and table.concat(state.doc_lines, "\n") or nil
+    parsed.desc = parsed.desc or (state.doc_lines and table.concat(state.doc_lines, "\n") or nil)
     if parsed.desc then parsed.desc = vim.trim(parsed.desc) end
     table.insert(cur_obj.fields, parsed)
     state.doc_lines = nil
@@ -260,14 +261,13 @@ end
 --- @param has_indent boolean
 local function process_lua_line(line, state, classes, classvars, has_indent)
   if state.cur_obj and state.cur_obj.kind == "class" then
-    local nm = line:match("^local%s+([a-zA-Z0-9_]+)%s*=")
+    local nm = lua_grammar.local_variable:match(line)
     if nm then classvars[nm] = state.cur_obj.name end
     return
   end
 
   do
-    local parent_tbl, sep, fun_or_meth_nm =
-      line:match("^function%s+([a-zA-Z0-9_]+)([.:])([a-zA-Z0-9_]+)%s*%(")
+    local parent_tbl, sep, fun_or_meth_nm = lua_grammar.table_function:match(line)
     if parent_tbl then
       -- Have a decl. Ensure cur_obj
       state.cur_obj = state.cur_obj or {}
@@ -304,7 +304,7 @@ local function process_lua_line(line, state, classes, classvars, has_indent)
 
   do
     -- Handle: `function A.B.C.foo(...)`
-    local fn_nm = line:match("^function%s+([.a-zA-Z0-9_]+)%s*%(")
+    local fn_nm = lua_grammar.table_chain_function:match(line)
     if fn_nm then
       state.cur_obj = state.cur_obj or {}
       state.cur_obj.name = fn_nm
@@ -314,17 +314,19 @@ local function process_lua_line(line, state, classes, classvars, has_indent)
 
   do
     -- Handle: `M.foo = {...}` where `M` is the modvar
-    local parent_tbl, tbl_nm = line:match("([a-zA-Z_]+)%.([a-zA-Z0-9_]+)%s*=")
+    local parent_tbl, tbl_nm = lua_grammar.table_variable:match(line)
     if state.cur_obj and parent_tbl and parent_tbl == state.cur_obj.modvar then
       state.cur_obj.name = tbl_nm
-      -- state.cur_obj.table = true -- jt: not sure about enforcing this
+      if not state.cur_obj.params and not state.cur_obj.returns then
+        state.cur_obj.table = true
+      end
       return
     end
   end
 
   do
     -- Handle: `foo = {...}`
-    local tbl_nm = line:match("^([a-zA-Z0-9_]+)%s*=")
+    local tbl_nm = lua_grammar.raw_variable:match(line)
     if tbl_nm and not has_indent then
       state.cur_obj = state.cur_obj or {}
       state.cur_obj.name = tbl_nm

@@ -410,6 +410,9 @@ end
 local function render_fun(fun, classes, section, config)
   if fun.access or fun.deprecated or fun.nodoc then return end
   if vim.startswith(fun.name, "_") or fun.name:find("[:.]_") then return end
+  if fun.desc == nil and fun.params == nil and fun.returns == nil and fun.notes == nil then
+    return
+  end
 
   local res = {}
   local bullet_offset = TAB_WIDTH * 2
@@ -587,9 +590,7 @@ end
 local function list_end(next_block, list_depth)
   if not next_block then return true end
 
-  if next_block.kind == "ul" or next_block.kind == "ol" then
-    return list_depth == 0
-  end
+  if next_block.kind == "ul" or next_block.kind == "ol" then return list_depth == 0 end
   return true
 end
 

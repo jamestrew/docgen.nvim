@@ -119,3 +119,21 @@ return M
   assert_fun(input, expect)
 end)
 
+describe("function", function()
+  it("handle different definition forms", function()
+    local input = [[
+local M = {}
+function M.myfunc() end
+
+M.otherfunc = function() end
+return M
+    ]]
+    local expect = {
+      { name = "M.myfunc" },
+      { name = "M.otherfunc" },
+    }
+
+    local _, actual, _, _ = parser.parse_str(input, "myfile.lua")
+    assert.same(expect, actual)
+  end)
+end)
