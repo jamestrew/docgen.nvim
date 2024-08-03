@@ -14,8 +14,9 @@ M.rep1 = function(x)
   return x ^ 1
 end
 
---- @param x vim.lpeg.Pattern
+--- @param x vim.lpeg.Pattern | string
 M.opt = function(x)
+  if type(x) == "string" then return lpeg.P(x) ^ -1 end
   return x ^ -1
 end
 
@@ -25,17 +26,27 @@ M.Pf = function(x)
 end
 
 --- @param x string
+M.Plf = function(x)
+  return M.fill * lpeg.P(x)
+end
+
+--- @param x string
 M.Sf = function(x)
   return M.fill * lpeg.S(x) * M.fill
 end
 
+--- for debugging
 M.It = function(tag)
   return lpeg.P(function(s, i)
     s = s:sub(i, #s)
     s = s:gsub("\n", "\\n")
     s = s:gsub("\t", "\\t")
     s = s:gsub(" ", "·")
-    print(string.format("tag: %s, match: '%s', idx: %s", tag, s, i))
+
+    if true then
+      --
+      print(string.format("tag: %s, match: '%s', idx: %s", tag, s, i))
+    end
     return true
   end)
 end
@@ -45,6 +56,15 @@ end
 ---@param repl string
 M.gsub = function(s, patt, repl)
   return lpeg.Cs((patt / repl + 1) ^ 0):match(s)
+end
+
+---@param x vim.lpeg.Pattern
+---@return vim.lpeg.Pattern
+M.balanced_paren_wrap = function(x)
+  return lpeg.P({ "(" * ((1 - lpeg.S("()")) + lpeg.V(1)) ^ 0 * ")" })
+    / function(match)
+      return x:match(match)
+    end
 end
 
 M.v = setmetatable({}, {

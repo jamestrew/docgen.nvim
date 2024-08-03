@@ -18,7 +18,7 @@ local string_double = P('"') * rep(any - P('"')) * P('"')
 local generic = P("`") * ty_ident * "`"
 
 local literal = string_single + string_double + (opt("-") * num)
-local types = P("nil")
+local base_types = P("nil")
   + "any"
   + "boolean"
   + "number"
@@ -29,7 +29,7 @@ local types = P("nil")
   + "thread"
   + "userdata"
 
-local ty_prims = types + ty_ident + literal + generic
+local ty_prims = base_types + ty_ident + literal + generic
 
 --- @param x vim.lpeg.Pattern
 local function paren(x)
@@ -53,62 +53,38 @@ end
 
 local array_postfix = Pf("[]") ^ 1
 local opt_postfix = Pf("?") ^ 1
-local ty_basics = (ty_prims * array_postfix) + (ty_prims * opt_postfix) + ty_prims
-
-local ty = ty_basics + paren(V("type"))
-local ty_union = ty * (array_postfix + opt_postfix + ((Pf("|") * ty) ^ 0))
 
 local grammar = P({
   "type",
-  type = C(ty_union),
+  type = C(v.ty_base),
+
+  ty_base = v.ty * (array_postfix + opt_postfix) ^ 0 * ((Pf("|") * v.ty) ^ 0),
+  ty = v.ty_basics + paren(v.type),
+  ty_basics = (v.ty_prims * array_postfix) + (v.ty_prims * opt_postfix) + v.ty_prims,
+  ty_prims = v.ty_kv_table
+    + v.ty_tuple
+    + v.ty_dict
+    + v.ty_table_literal
+    + v.ty_fun
+    + base_types
+    + ty_ident
+    + literal
+    + generic,
+
+  ty_tuple = Pf("[") * comma1(v.ty_base) * Pf("]"),
+  ty_dict = Pf("{") * comma1(Pf("[") * v.ty_base * Pf("]") * Pf(":") * v.ty_base) * Pf("}"),
+  ty_kv_table = Pf("table") * Pf("<") * v.ty_base * Pf(",") * v.ty_base * Pf(">"),
+  ty_table_literal = Pf("{") * comma1(ty_ident * Pf(":") * v.ty_base) * Pf("}"),
+  ty_fun = Pf("fun")
+    * Pf("(")
+    * comma(ty_ident * Pf(":") * v.ty_base)
+    * Pf(")")
+    * Pf(":")
+    * v.ty_base,
 }) / function(match)
   return match:gsub("^%((.*)%)$", "%1"):gsub("%?+", "?")
 end
 
----@type [string, string|boolean][]
-local test_cases = {
-  { "foo", "foo" },
-  { "(foo)", "foo" }, -- handles redundant parens
-  { "true", "true" },
-  { "true?", "true?" }, -- ty_opt
-  { "string[]", "string[]" }, -- ty_array
-  { "string|number", "string|number" }, -- ty_union
-  { "(string)[]", "(string)[]" }, -- FAIL
-  { "(string|number)[]", "(string|number)[]" },
-  { ")bad", false },
-  { "coalesce??", "coalesce?" },
-  { "number?|string", "number?|string" },
-  { "number[]|string", "number[]|string" },
-  { "string[]?", "string[]?" },
-  { "wtf?[]", "wtf?[]" },
-}
+local f ---@type fun (a: number): number
 
-if true then
-  for i, test_case in ipairs(test_cases) do
-    local input, expected = test_case[1], test_case[2]
-    local actual = grammar:match(input)
-    if expected == false then
-      assert(actual == nil, "failed to fail: " .. input)
-    else
-      assert(actual, "failed to match: " .. input)
-      assert(
-        expected == actual,
-        vim.inspect({
-          idx = i,
-          expected = expected,
-          got = vim.F.if_nil(actual, "<nil>"),
-          input = input,
-        })
-      )
-    end
-  end
-
-  print("types.lua: ok")
-end
-
-local f ---@type string[][]
-
--- precedence
--- array
--- union
--- opt
+return grammar

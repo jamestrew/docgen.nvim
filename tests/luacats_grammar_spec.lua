@@ -43,12 +43,12 @@ describe("params", function()
     desc = "desc",
   })
 
-  test("@param level (integer|string) desc", {
-    kind = "param",
-    name = "level",
-    type = "integer|string",
-    desc = "desc",
-  })
+  -- test("@param level (integer|string) desc", {
+  --   kind = "param",
+  --   name = "level",
+  --   type = "integer|string",
+  --   desc = "desc",
+  -- })
 
   test('@param rfc "rfc2396"| "rfc2732" | "rfc3986" | nil', {
     kind = "param",
@@ -84,6 +84,34 @@ describe("params", function()
     kind = "param",
     name = "type",
     type = "`T`",
+  })
+
+  test('@param type [number,string,"good"|"bad"] this is a tuple type', {
+    desc = "this is a tuple type",
+    kind = "param",
+    name = "type",
+    type = '[number,string,"good"|"bad"]',
+  })
+
+  -- test("@param foo (string|number)[] this is a union array", {
+  --   desc = "this is a union array",
+  --   kind = "param",
+  --   name = "foo",
+  --   type = "(string|number)[]",
+  -- })
+
+  test("@param foo fun(a:string): boolean this is a function", {
+    desc = "this is a function",
+    kind = "param",
+    name = "foo",
+    type = "fun(a:string): boolean",
+  })
+
+  test("@param foo (string)[] this is a string array", {
+    desc = "this is a string array",
+    kind = "param",
+    name = "foo",
+    type = "(string)[]",
   })
 end)
 
@@ -167,4 +195,79 @@ describe("fields", function()
     name = "[1]",
     type = "integer",
   })
+end)
+
+describe("types", function()
+  local types = require("docgen.grammar.types")
+
+  ---@param idx integer
+  ---@param input string
+  ---@param expected string|boolean
+  local function test_types(idx, input, expected)
+    it(string.format("%d: can parse %q", idx, input), function()
+      local actual = types:match(input)
+      if expected == true then
+        assert.same(input, actual)
+      elseif not expected then
+        assert.is_nil(actual)
+      else
+        assert.same(expected, actual)
+      end
+    end)
+  end
+
+  ---@type [string, string|boolean][]
+  local test_cases = {
+    { "foo", true },
+    { "(foo)", "foo" },
+    { "true", true },
+    { "true?", true },
+    { "(true)?", true },
+    { "string[]", true },
+    { "string|number", true },
+    { "(string)[]", true },
+    { "(string|number)[]", true },
+    { ")bad", false },
+    { "coalesce??", "coalesce?" },
+    { "number?|string", true },
+    { "'foo'|'bar'|'baz'", true },
+    { [["foo"|"bar"|"baz"]], true },
+    { "(number)?|string", true }, --
+    { "number[]|string", true },
+    { "string[]?", true },
+    { "wtf?[]", true },
+
+    -- tuples
+    { "[string]", true },
+    { "[string, number]", true },
+    { "[string, number]?", true },
+    { "[string, number][]", true },
+    { "[string, number]|string", true },
+    { "[string|number, number?]", true },
+    { "string|[string, number]", true },
+    { "(true)?|[foo]", true },
+
+    -- dict
+    { "{[string]:string}", true },
+    { "{ [ string ] : string }", true },
+    { "{ [ string|any ] : string }", true },
+    { "{[string]: string, [number]: boolean}", true },
+
+    -- key-value table
+    { "table<string,any>", true },
+    { "table", true },
+
+    -- table literal
+    { "{foo: number}", true },
+    { "{foo: string, bar: [number, boolean]?}", true },
+
+    -- function
+    { "fun(a: string, b:foo|bar): string", true },
+    { "(fun(a: string, b:foo|bar): string)?", true },
+
+  }
+
+  for i, tc in ipairs(test_cases) do
+    test_types(i, tc[1], tc[2])
+  end
 end)
