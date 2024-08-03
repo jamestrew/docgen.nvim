@@ -43,12 +43,12 @@ describe("params", function()
     desc = "desc",
   })
 
-  -- test("@param level (integer|string) desc", {
-  --   kind = "param",
-  --   name = "level",
-  --   type = "integer|string",
-  --   desc = "desc",
-  -- })
+  test("@param level (integer|string) desc", {
+    kind = "param",
+    name = "level",
+    type = "integer|string",
+    desc = "desc",
+  })
 
   test('@param rfc "rfc2396"| "rfc2732" | "rfc3986" | nil', {
     kind = "param",
@@ -195,6 +195,13 @@ describe("fields", function()
     name = "[1]",
     type = "integer",
   })
+
+  test("@field [1] integer this is a description", {
+    kind = "field",
+    name = "[1]",
+    type = "integer",
+    desc = "this is a description",
+  })
 end)
 
 describe("types", function()
@@ -219,8 +226,11 @@ describe("types", function()
   ---@type [string, string|boolean][]
   local test_cases = {
     { "foo", true },
+    { "foo   ", "foo" },
     { "(foo)", "foo" },
     { "true", true },
+    { "vim.type", true },
+    { "vim-type", true },
     { "true?", true },
     { "(true)?", true },
     { "string[]", true },
@@ -236,9 +246,11 @@ describe("types", function()
     { "number[]|string", true },
     { "string[]?", true },
     { "wtf?[]", true },
+    { "vim.type?|string?   ", "vim.type?|string?" },
 
     -- tuples
     { "[string]", true },
+    { "[1]", true },
     { "[string, number]", true },
     { "[string, number]?", true },
     { "[string, number][]", true },
@@ -246,6 +258,7 @@ describe("types", function()
     { "[string|number, number?]", true },
     { "string|[string, number]", true },
     { "(true)?|[foo]", true },
+    { "[fun(a: string):boolean]", true },
 
     -- dict
     { "{[string]:string}", true },
@@ -256,6 +269,8 @@ describe("types", function()
     -- key-value table
     { "table<string,any>", true },
     { "table", true },
+    { "string|table|boolean", true },
+    { "string|table|(boolean)", true },
 
     -- table literal
     { "{foo: number}", true },
@@ -264,7 +279,12 @@ describe("types", function()
     -- function
     { "fun(a: string, b:foo|bar): string", true },
     { "(fun(a: string, b:foo|bar): string)?", true },
-
+    { "fun(a: string, b:foo|bar): string, string", true },
+    { "fun(a: string, b:foo|bar)", true },
+    -- {
+    --   "string|table|(fun(diagnostic:vim.Diagnostic,i:integer,total:integer): string, string)",
+    --   true,
+    -- },
   }
 
   for i, tc in ipairs(test_cases) do

@@ -6,7 +6,7 @@ local C, Ct, Cg = lpeg.C, lpeg.Ct, lpeg.Cg
 local V = lpeg.V
 
 local util = require("docgen.grammar.utils")
-local rep, rep1, opt, Pf, Sf = util.rep, util.rep1, util.opt, util.Pf, util.Sf
+local rep, rep1, opt, Pf, Plf, Sf = util.rep, util.rep1, util.opt, util.Pf, util.Plf, util.Sf
 local fill, any, num, letter = util.fill, util.any, util.num, util.letter
 local ident = require("docgen.grammar.lua").ident
 local v = util.v
@@ -51,40 +51,29 @@ local function comma(x)
   return opt(comma1(x))
 end
 
-local array_postfix = Pf("[]") ^ 1
-local opt_postfix = Pf("?") ^ 1
+local array_postfix = Plf("[]") ^ 1
+local opt_postfix = Plf("?") ^ 1
 
 local grammar = P({
-  "type",
-  type = C(v.ty_base),
+  "typedef",
+  typedef = C(v.type),
 
-  ty_base = v.ty * (array_postfix + opt_postfix) ^ 0 * ((Pf("|") * v.ty) ^ 0),
-  ty = v.ty_basics + paren(v.type),
-  ty_basics = (v.ty_prims * array_postfix) + (v.ty_prims * opt_postfix) + v.ty_prims,
-  ty_prims = v.ty_kv_table
-    + v.ty_tuple
-    + v.ty_dict
-    + v.ty_table_literal
-    + v.ty_fun
-    + base_types
-    + ty_ident
-    + literal
-    + generic,
+  type = v.ty * (array_postfix + opt_postfix) ^ 0 * ((Pf("|") * v.ty) ^ 0),
+  ty = v.composite + paren(v.typedef),
+  composite = (v.types * array_postfix) + (v.types * opt_postfix) + v.types,
+  types = v.kv_table + v.tuple + v.dict + v.table_literal + v.fun + ty_prims,
 
-  ty_tuple = Pf("[") * comma1(v.ty_base) * Pf("]"),
-  ty_dict = Pf("{") * comma1(Pf("[") * v.ty_base * Pf("]") * Pf(":") * v.ty_base) * Pf("}"),
-  ty_kv_table = Pf("table") * Pf("<") * v.ty_base * Pf(",") * v.ty_base * Pf(">"),
-  ty_table_literal = Pf("{") * comma1(ty_ident * Pf(":") * v.ty_base) * Pf("}"),
-  ty_fun = Pf("fun")
+  tuple = Pf("[") * comma1(v.type) * Plf("]"),
+  dict = Pf("{") * comma1(Pf("[") * v.type * Pf("]") * Pf(":") * v.type) * Plf("}"),
+  kv_table = Pf("table") * Pf("<") * v.type * Pf(",") * v.type * Pf(">"),
+  table_literal = Pf("{") * comma1(ident * Pf(":") * v.type) * Pf("}"),
+  fun = Pf("fun")
     * Pf("(")
-    * comma(ty_ident * Pf(":") * v.ty_base)
-    * Pf(")")
-    * Pf(":")
-    * v.ty_base,
+    * comma(ident * Pf(":") * v.type)
+    * Plf(")")
+    * (Pf(":") * comma1(v.type)) ^ -1,
 }) / function(match)
   return match:gsub("^%((.*)%)$", "%1"):gsub("%?+", "?")
 end
-
-local f ---@type fun (a: number): number
 
 return grammar

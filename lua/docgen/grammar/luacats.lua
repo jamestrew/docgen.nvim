@@ -4,20 +4,15 @@ LPEG grammar for LuaCATS
 
 local lpeg = vim.lpeg
 local P, S = lpeg.P, lpeg.S
-local Ct, Cg = lpeg.Ct, lpeg.Cg
+local C, Ct, Cg = lpeg.C, lpeg.Ct, lpeg.Cg
 
 local util = require("docgen.grammar.utils")
-local rep, rep1, opt, Pf, Sf = util.rep, util.rep1, util.opt, util.Pf, util.Sf
+local rep, rep1, opt, Pf, Plf, Sf = util.rep, util.rep1, util.opt, util.Pf, util.Plf, util.Sf
 local fill, any, num, letter = util.fill, util.any, util.num, util.letter
 local v = util.v
 
 local ws = util.rep1(lpeg.S(" \t"))
 local ident = letter * rep(letter + num + S("-."))
-local string_single = P("'") * rep(any - P("'")) * P("'")
-local string_double = P('"') * rep(any - P('"')) * P('"')
-
-local literal = (string_single + string_double + (opt(P("-")) * num) + P("false") + P("true"))
-
 local lname = (ident + P("...")) * opt(P("?"))
 
 --- @param x vim.lpeg.Pattern
@@ -99,6 +94,14 @@ local function annot(nm, pat)
   return Ct(Cg(P(nm), "kind"))
 end
 
+---@param match string
+---@return string
+local function unwrap_paren(match)
+  return (match:gsub("^%((.*)%)$", "%1"))
+end
+
+local typedef = require("docgen.grammar.types")
+
 local grammar = P({
   rep1(P("@") * (v.ats + v.ext_ats)),
 
@@ -109,7 +112,7 @@ local grammar = P({
     + annot("generic", cname * opt(colon * v.ctype))
     + annot("class", opt_exact * opt(paren(caccess)) * fill * cname * opt_parent)
     + annot("field", opt(caccess * ws) * v.field_name * ws * v.ctype * opt_desc)
-    + annot("operator", cname * opt(paren(Cg(v.ltype, "argtype"))) * colon * v.ctype)
+    + annot("operator", cname * opt(paren(Cg(v.ctype, "argtype"))) * colon * v.ctype)
     + annot(access)
     + annot("deprecated")
     + annot("alias", cname * opt(ws * v.ctype))
@@ -130,21 +133,22 @@ local grammar = P({
   ),
 
   field_name = Cg(lname + (v.ty_index * opt(P("?"))), "name"),
+  ty_index = C(Pf("[") * typedef * fill * P("]")),
 
-  ctype = parenOpt(Cg(v.ltype, "type")),
-  ltype = parenOpt(v.ty_union),
+  ctype = Cg(typedef, "type")
+  -- ltype = parenOpt(v.ty_union),
 
-  ty_union = v.ty_opt * rep(Pf("|") * v.ty_opt),
-  ty = v.ty_fun + ident + v.ty_table + literal + paren(v.ty) + v.ty_generic,
-  ty_param = Pf("<") * comma1(v.ltype) * fill * P(">"),
-  ty_opt = v.ty * opt(v.ty_param) * opt(P("[]")) * opt(P("?")),
-  ty_index = (Pf("[") * (v.ltype + ident + rep1(num)) * fill * P("]")),
-  table_key = v.ty_index + lname,
-  table_elem = v.table_key * colon * v.ltype,
-  ty_table = Pf("{") * comma1(v.table_elem) * fill * P("}"),
-  fun_param = lname * opt(colon * v.ltype),
-  ty_fun = Pf("fun") * paren(comma(lname * opt(colon * v.ltype))) * opt(colon * comma1(v.ltype)),
-  ty_generic = P("`") * letter * P("`"),
+  -- ty_union = v.ty_opt * rep(Pf("|") * v.ty_opt),
+  -- ty = v.ty_fun + ident + v.ty_table + literal + paren(v.ty) + v.ty_generic,
+  -- ty_param = Pf("<") * comma1(v.ltype) * fill * P(">"),
+  -- ty_opt = v.ty * opt(v.ty_param) * opt(P("[]")) * opt(P("?")),
+  -- ty_index = (Pf("[") * (v.ltype + ident + rep1(num)) * fill * P("]")),
+  -- table_key = v.ty_index + lname,
+  -- table_elem = v.table_key * colon * v.ltype,
+  -- ty_table = Pf("{") * comma1(v.table_elem) * fill * P("}"),
+  -- fun_param = lname * opt(colon * v.ltype),
+  -- ty_fun = Pf("fun") * paren(comma(lname * opt(colon * v.ltype))) * opt(colon * comma1(v.ltype)),
+  -- ty_generic = P("`") * letter * P("`"),
 })
 
 return grammar --[[@as docgen.grammar.luacats]]
