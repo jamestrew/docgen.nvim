@@ -100,6 +100,18 @@ local function make_section(file, config)
   }
 end
 
+---@param lines string[]
+---@return string
+local function trim_line_endings(lines)
+  local content = table.concat(lines)
+  local res = {}
+
+  for line in vim.gsplit(content, "\n") do
+    table.insert(res, (line:gsub(" +$", "")))
+  end
+  return table.concat(res, "\n")
+end
+
 ---@param config docgen.Config
 M.run = function(config)
   local file_res = {} ---@type table<string, [table<string, docgen.parser.class>, docgen.parser.fun[], string[]]>
@@ -130,9 +142,8 @@ M.run = function(config)
   local f, err = io.open(fname, "w")
   if f == nil then error(string.format("failed to open file: %s\n%s", fname, err)) end
 
-  for _, x in ipairs(doc_lines) do
-    f:write(x)
-  end
+  local doc = trim_line_endings(doc_lines)
+  f:write(doc)
   f:close()
 end
 
