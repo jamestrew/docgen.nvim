@@ -1,7 +1,7 @@
 local lpeg = vim.lpeg
-local P, R, C = lpeg.P, lpeg.R, lpeg.C
+local P, R, C, S = lpeg.P, lpeg.R, lpeg.C, lpeg.S
 local util = require("docgen.grammar.utils")
-local spaces, fill = util.spacing1, util.fill
+local spaces, fill, rep, rep1 = util.spacing1, util.fill, util.rep, util.rep1
 
 local M = {}
 
@@ -12,7 +12,11 @@ local oparen = P("(")
 local dot = P(".")
 
 local ident_first = P("_") + R("az", "AZ")
-M.ident = ident_first * (ident_first + R("09")) ^ 0
+M.ident = ident_first * rep(ident_first + R("09"))
+
+local ty_ident_sep = S("-.")
+M.type_ident = M.ident * rep(ty_ident_sep * M.ident)
+
 local ident_sep = dot + ":"
 
 -- eg. `local foo = 1`
@@ -29,7 +33,7 @@ local tbl_fn2 = C(M.ident) * C(ident_sep) * C(M.ident) * fill * eq * fill * fn
 -- captures `M`, `.` or `:`, `foobar` for either case
 M.table_function = tbl_fn1 + tbl_fn2
 
-local tbl_chain = C((M.ident * dot) ^ 1 * M.ident)
+local tbl_chain = C(rep1(M.ident * dot) * M.ident)
 local tbl_chain_fn1 = fn * spaces * tbl_chain * fill * oparen
 local tbl_chain_fn2 = tbl_chain * fill * eq * fill * fn
 

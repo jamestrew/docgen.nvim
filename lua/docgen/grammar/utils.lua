@@ -35,6 +35,26 @@ M.Sf = function(x)
   return M.fill * lpeg.S(x) * M.fill
 end
 
+--- @param x vim.lpeg.Pattern
+function M.paren(x)
+  return M.Pf("(") * x * M.fill * lpeg.P(")")
+end
+
+--- @param x vim.lpeg.Pattern
+function M.parenOpt(x)
+  return M.paren(x) + x
+end
+
+--- @param x vim.lpeg.Pattern
+function M.comma1(x)
+  return M.parenOpt(x * M.rep(M.Pf(",") * x))
+end
+
+--- @param x vim.lpeg.Pattern
+function M.comma(x)
+  return M.opt(M.comma1(x))
+end
+
 --- for debugging
 M.It = function(tag)
   return lpeg.P(function(s, i)
@@ -43,10 +63,7 @@ M.It = function(tag)
     s = s:gsub("\t", "\\t")
     s = s:gsub(" ", "·")
 
-    if true then
-      --
-      print(string.format("tag: %s, match: '%s', idx: %s", tag, s, i))
-    end
+    if true then print(string.format("tag: %s, match: '%s', idx: %s", tag, s, i)) end
     return true
   end)
 end
@@ -81,6 +98,6 @@ M.spacing1 = M.rep1(M.spacing)
 M.fill = M.opt(M.spacing1)
 M.any = lpeg.P(1)
 M.num = lpeg.R("09")
-M.letter = lpeg.R("az", "AZ") + lpeg.S("_$")
+M.letter = lpeg.R("az", "AZ")
 
 return M
