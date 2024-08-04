@@ -75,15 +75,6 @@ M.gsub = function(s, patt, repl)
   return lpeg.Cs((patt / repl + 1) ^ 0):match(s)
 end
 
----@param x vim.lpeg.Pattern
----@return vim.lpeg.Pattern
-M.balanced_paren_wrap = function(x)
-  return lpeg.P({ "(" * ((1 - lpeg.S("()")) + lpeg.V(1)) ^ 0 * ")" })
-    / function(match)
-      return x:match(match)
-    end
-end
-
 M.v = setmetatable({}, {
   __index = function(_, k)
     return lpeg.V(k)

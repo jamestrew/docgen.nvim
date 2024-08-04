@@ -117,17 +117,32 @@ local function render_type(ty, generics, default)
   return string.format("(`%s`)", ty)
 end
 
+local lpeg = vim.lpeg
+local P, C, S, V = lpeg.P, lpeg.C, lpeg.S, lpeg.V
+local Cp = lpeg.Cp()
+local balanced_paren = P({ "(" * ((1 - S("()")) + V(1)) ^ 0 * ")" })
+local default_key = S("Dd") * P("efault") * S(":") * S(" \t") ^ 0
+local default_start = P("(") * default_key * P(1) ^ 1
+local default_section = P({ Cp * default_start * Cp + 1 * V(1) })
+local default_cap = default_key * C(P(1) ^ 1)
+local default_value = balanced_paren
+  / function(match)
+    local inner = match:sub(2, -2)
+    return default_cap:match(inner)
+  end
+
 ---@param desc? string
 ---@return string, string?
 local function get_default(desc)
   if not desc then return "", nil end
 
-  -- TODO: capture `)` if inside backticks
-  -- eg: `(default: `vim.loop.cwd()`)`  ->  `vim.loop.cwd()`
-  local default = desc:match("\n?%s*%([dD]efault: *([^)]+)%)$")
-  if default then desc = desc:gsub("\n?%s*%([dD]efault: *[^)]+%)$", "") end
+  local def_start, def_end = default_section:match(desc)
+  if def_start == nil then return desc, nil end
 
-  return desc, default
+  local desc_default = desc:sub(def_start, def_end)
+  local value = default_value:match(desc_default)
+  desc = desc:sub(1, def_start - 1)
+  return desc, value
 end
 
 ---@param class docgen.parser.class

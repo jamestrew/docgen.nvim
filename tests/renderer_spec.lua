@@ -320,6 +320,23 @@ foo_bar.fire_employee({emp})                         *foo.bar.fire_employee()*
     ]]
     assert_funs(input, expect)
   end)
+
+  it("default params", function()
+    local input = [[
+---@param x string some string (default: `"hello"`)
+---@param y string cwd (default: `vim.uv.cwd()`)
+function M.some_function(x, y) end
+    ]]
+
+    local expect = [[
+foo_bar.some_function({x}, {y})                      *foo.bar.some_function()*
+    Parameters: ~
+      • {x}  (`string`, default: `"hello"`) some string
+      • {y}  (`string`, default: `vim.uv.cwd()`) cwd
+    ]]
+
+    assert_funs(input, expect)
+  end)
 end)
 
 describe("classes", function()
