@@ -71,6 +71,9 @@ M.foo = function(x, y) return 'foo' + x end
 
 --- another one
 M.bar = function() end
+
+--- different format
+function M.baz() end
     ]]
 
     local expect = [[
@@ -195,6 +198,7 @@ foo_bar.this_is_a_really_long_function_name_that_should_be_wrapped({some_param})
 --- (default: "hello")
 ---@param ... string some strings
 ---@param ty `T` some type
+---@param bar (string|number)[] union array
 ---@return boolean enabled
 ---@return boolean|nil error if something errored
 ---@return string ... some return strings
@@ -204,7 +208,8 @@ end
     ]]
 
     local expect = [[
-foo_bar.funky_params({foo}, {...}, {ty})              *foo.bar.funky_params()*
+                                                      *foo.bar.funky_params()*
+foo_bar.funky_params({foo}, {...}, {ty}, {bar})
     hello
 
     Parameters: ~
@@ -219,6 +224,7 @@ foo_bar.funky_params({foo}, {...}, {ty})              *foo.bar.funky_params()*
                • another one
       • {...}  (`string`) some strings
       • {ty}   (``T``) some type
+      • {bar}  (`(string|number)[]`) union array
 
     Return (multiple): ~
         (`boolean`)
