@@ -230,6 +230,7 @@ describe("types", function()
     { "true", true },
     { "vim.type", true },
     { "vim-type", true },
+    { "foo.bar-baz", true },
     { "`ABC`", true },
     { "42", true },
     { "-42", true },

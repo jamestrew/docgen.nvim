@@ -24,7 +24,7 @@ local caccess = Cg(access, "access")
 local desc_delim = Sf("#:") + ws
 local desc = Cg(rep(any), "desc")
 local opt_desc = opt(desc_delim * desc)
-local cname = Cg(ident, "name")
+local ty_name = Cg(type_ident, "name")
 local opt_parent = opt(colon * Cg(type_ident, "parent"))
 
 --- @class docgen.grammar.luacats.Param
@@ -82,17 +82,17 @@ local grammar = P({
   rep1(P("@") * (v.ats + v.ext_ats)),
 
   ats = annot("param", Cg(lname, "name") * ws * v.ctype * opt_desc)
-    + annot("return", comma1(Ct(v.ctype * opt(ws * (cname + Cg(P("..."), "name"))))) * opt_desc)
+    + annot("return", comma1(Ct(v.ctype * opt(ws * (ty_name + Cg(P("..."), "name"))))) * opt_desc)
     + annot("type", comma1(Ct(v.ctype)) * opt_desc)
-    + annot("cast", cname * ws * opt(Sf("+-")) * v.ctype)
-    + annot("generic", cname * opt(colon * v.ctype))
-    + annot("class", opt_exact * opt(paren(caccess)) * fill * cname * opt_parent)
+    + annot("cast", ty_name * ws * opt(Sf("+-")) * v.ctype)
+    + annot("generic", ty_name * opt(colon * v.ctype))
+    + annot("class", opt_exact * opt(paren(caccess)) * fill * ty_name * opt_parent)
     + annot("field", opt(caccess * ws) * v.field_name * ws * v.ctype * opt_desc)
-    + annot("operator", cname * opt(paren(Cg(v.ctype, "argtype"))) * colon * v.ctype)
+    + annot("operator", ty_name * opt(paren(Cg(v.ctype, "argtype"))) * colon * v.ctype)
     + annot(access)
     + annot("deprecated")
-    + annot("alias", cname * opt(ws * v.ctype))
-    + annot("enum", cname)
+    + annot("alias", ty_name * opt(ws * v.ctype))
+    + annot("enum", ty_name)
     + annot("overload", v.ctype)
     + annot("see", opt(desc_delim) * desc)
     + annot("diagnostic", opt(desc_delim) * desc)
