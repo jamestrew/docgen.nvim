@@ -1,5 +1,5 @@
-local luacats_grammar = require("docgen.grammar.luacats")
 local lua_grammar = require("docgen.grammar.lua")
+local luacats_grammar = require("docgen.grammar.luacats")
 
 --- @class (private) docgen.parser.param
 --- @field name string
@@ -317,9 +317,7 @@ local function process_lua_line(line, state, classes, classvars, has_indent)
     local parent_tbl, tbl_nm = lua_grammar.table_variable:match(line)
     if state.cur_obj and parent_tbl and parent_tbl == state.cur_obj.modvar then
       state.cur_obj.name = tbl_nm
-      if not state.cur_obj.params and not state.cur_obj.returns then
-        state.cur_obj.table = true
-      end
+      if not state.cur_obj.params and not state.cur_obj.returns then state.cur_obj.table = true end
       return
     end
   end

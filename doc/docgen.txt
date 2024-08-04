@@ -3,39 +3,9 @@ DOCGEN                                                           *docgen.nvim*
 
 Generate documentation from lua files with LuaCATS annotations + more.
 
-*docgen.FileSection*
-
-    Fields: ~
-      • {[1]}        (`string`) filepath from which to generate the section
-                     from
-      • {title}      (`string?`) title of the section
-
-                     if omitted, generated from the filename eg:
-                     • './lua/telescope/init.lua' -> 'TELESCOPE'
-                     • './lua/telescope/actions/init.lua' -> 'ACTIONS'
-                     • './lua/telescope/actions/set.lua' -> 'ACTIONS_SET'
-      • {tag}        (`string?`) help tag of the section WITHOUT the
-                     asterisks
-
-                     if omitted, generated from the filename eg:
-                     • './lua/telescope/init.lua' -> 'telescope'
-                     • './lua/telescope/actions/init.lua' ->
-                       'telescope.actions'
-                     • './lua/telescope/actions/set.lua' ->
-                       'telescope.actions.set'
-      • {fn_prefix}  (`string?`) module prefix for functions
-
-                     if omitted, generated from the filename same as
-                     `section_title` but in lowercase
-
-
 docgen.run({config})                                       *docgen.nvim.run()*
     Parameters: ~
-      • {config}  (`table`) A table with the following fields:
-                  • {name} (`string`) plugin name, will be used to generate
-                    filename, eg `docgen` -> `docgen.txt`
-                  • {files} (`string|docgen.FileSection`) file paths/config to
-                    generate docs from in order
+      • {config}  (`docgen.Config`)
 
 ==============================================================================
 RENDERER                                                     *docgen.renderer*
