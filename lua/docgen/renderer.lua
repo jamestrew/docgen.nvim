@@ -634,6 +634,7 @@ M._render_markdown = function(markdown, start_indent, indent, list_marker_size, 
       for line in vim.gsplit(vim.trim(block.lines):gsub("\n$", ""), "\n") do
         table.insert(res, tabs .. line .. "\n")
       end
+      table.insert(res, "\n")
     elseif block.kind == "ul" then
       ---@cast block docgen.grammar.markdown.ul
       render_ul(block, res, start_indent, indent, list_marker_size, list_depth)
