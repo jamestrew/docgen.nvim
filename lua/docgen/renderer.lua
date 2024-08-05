@@ -1,4 +1,4 @@
-local parse_md = require("docgen.grammar.markdown").parse_markdown
+local render_md = require("docgen.markdown").md_to_vimdoc
 
 local M = {}
 
@@ -15,6 +15,8 @@ local function string_literal(str)
   return str
 end
 
+-- TODO: maybe this is excessive now and can be replaced with the other `wrap`
+-- function from lewis
 --- Wrap text to a given width based on indentation. Treats `inline code` as a
 --- single word to avoid splitting it during wrapping.
 ---@param text string
@@ -275,12 +277,10 @@ local function render_fields_or_params(objs, generics, classes)
         table.insert(res, pname)
         if #pty > TEXT_WIDTH - indent then
           vim.list_extend(res, { " ", pty, "\n" })
-          table.insert(res, M.render_markdown(desc, indent_offset, indent_offset))
-          table.insert(res, "\n")
+          table.insert(res, render_md(desc, indent_offset, indent_offset))
         else
           desc = string.format("%s %s", pty, desc)
-          desc = M.render_markdown(desc, #pname, indent_offset):gsub("^ *", "")
-          table.insert(res, string.format(" %s\n", desc))
+          table.insert(res, render_md(desc, 1, indent_offset))
         end
       else
         table.insert(res, string.format("%s %s\n", pname, pty))
@@ -288,8 +288,7 @@ local function render_fields_or_params(objs, generics, classes)
     else
       if desc then
         table.insert(res, pname)
-        table.insert(res, M.render_markdown(desc, 1, indent_offset))
-        table.insert(res, "\n")
+        table.insert(res, render_md(desc, 1, indent_offset))
       end
     end
   end
@@ -316,15 +315,12 @@ local function render_class(class, classes)
       resolve_class_parents(class, classes)
     else
       local text = string.format("Extends |%s|", class.parent)
-      table.insert(res, M.render_markdown(text, 0, 0))
+      table.insert(res, render_md(text, TAB_WIDTH, TAB_WIDTH))
       table.insert(res, "\n")
     end
   end
 
-  if class.desc then
-    table.insert(res, M.render_markdown(class.desc, TAB_WIDTH, TAB_WIDTH))
-    table.insert(res, "\n")
-  end
+  if class.desc then table.insert(res, render_md(class.desc, TAB_WIDTH, TAB_WIDTH)) end
 
   local fields_text = render_fields_or_params(class.fields, nil, classes)
   if not fields_text:match("^%s*$") then
@@ -401,8 +397,7 @@ local function render_fun_returns(returns, generics, classes)
     table.insert(blk, ret.desc or "")
 
     local offset = TAB_WIDTH * 2
-    table.insert(res, M.render_markdown(table.concat(blk, " "), offset, offset))
-    table.insert(res, "\n")
+    table.insert(res, render_md(table.concat(blk, " "), offset, offset))
   end
 
   return table.concat(res)
@@ -438,18 +433,14 @@ local function render_fun(fun, classes, section, config)
   table.insert(res, "\n")
 
   if fun.desc then
-    table.insert(res, M.render_markdown(fun.desc, TAB_WIDTH, TAB_WIDTH))
-    table.insert(res, "\n\n")
+    table.insert(res, render_md(fun.desc, TAB_WIDTH, TAB_WIDTH))
+    table.insert(res, "\n")
   end
 
   if fun.notes then
     table.insert(res, string.format("%sNote: ~\n", TAB))
     for _, note in ipairs(fun.notes) do
-      table.insert(
-        res,
-        string.format("%s  • %s", TAB, M.render_markdown(note.desc, 0, bullet_offset))
-      )
-      table.insert(res, "\n")
+      table.insert(res, string.format("%s  • %s", TAB, render_md(note.desc, 0, bullet_offset)))
     end
     table.insert(res, "\n")
   end
@@ -479,10 +470,7 @@ local function render_fun(fun, classes, section, config)
   if fun.see and #fun.see > 0 then
     table.insert(res, string.format("%sSee also: ~\n", TAB))
     for _, s in ipairs(fun.see) do
-      table.insert(
-        res,
-        string.format("%s  • %s\n", TAB, M.render_markdown(s.desc, 0, bullet_offset))
-      )
+      table.insert(res, string.format("%s  • %s", TAB, render_md(s.desc, 0, bullet_offset)))
     end
     table.insert(res, "\n")
   end
@@ -504,168 +492,12 @@ M.render_funs = function(funs, classes, section, config)
   return table.concat(res)
 end
 
----@param paragraph string
----@param start_indent integer
----@param indents integer
----@param next_block docgen.grammar.markdown.result?
----@return string
-local function render_paragraph(paragraph, start_indent, indents, next_block)
-  local res = {}
-  for para_line in vim.gsplit(paragraph, "\n") do
-    table.insert(res, text_wrap(para_line, start_indent, indents))
-    table.insert(res, "\n")
-  end
-
-  if next_block and next_block.kind == "paragraph" then table.insert(res, "\n") end
-  return table.concat(res)
-end
-
----@param code_block docgen.grammar.markdown.code_block
----@param lines string[]
----@param tabs string
-local function render_code_block(code_block, lines, tabs)
-  tabs = tabs == "" and TAB or tabs
-  local last_line = lines[#lines]
-  if last_line and not last_line:match("^[ \n]*$") then
-    lines[#lines] = last_line:gsub("[ \n]*$", "")
-    table.insert(lines, " ")
-  end
-
-  table.insert(lines, string.format(">%s\n", code_block.lang or ""))
-  for line in vim.gsplit(code_block.code:gsub("\n$", ""), "\n") do
-    table.insert(lines, string.format("%s%s\n", tabs, line))
-  end
-  table.insert(lines, "<\n")
-end
-
----@param ul docgen.grammar.markdown.ul
----@param lines string[]
----@param start_indent integer
----@param indent integer
----@param list_marker_size integer?
----@param list_depth integer
-local function render_ul(ul, lines, start_indent, indent, list_marker_size, list_depth)
-  list_marker_size = list_marker_size or 2 -- len('• ')
-  local sep = ul.tight and "\n" or "\n\n"
-
-  for _, items in ipairs(ul.items) do
-    local marker_ws = string.rep(" ", start_indent)
-    local marker = string.format("%s•%s", marker_ws, string.rep(" ", list_marker_size - 1))
-
-    local list_item = M._render_markdown(
-      items,
-      indent + list_marker_size,
-      indent + list_marker_size,
-      list_marker_size,
-      list_depth + 1
-    ):gsub("^ *", "")
-
-    table.insert(lines, string.format("%s%s%s", marker, list_item, sep))
-    start_indent = indent
-  end
-end
-
----@param ol docgen.grammar.markdown.ol
----@param lines string[]
----@param start_indent integer
----@param indent integer
----@param list_depth integer
-local function render_ol(ol, lines, start_indent, indent, list_depth)
-  local sep = ol.tight and "\n" or "\n\n"
-
-  local max_marker = ol.start + #ol.items - 1
-  local list_marker_size = #tostring(max_marker) + 1 + 1 -- number + dot + space
-
-  for i, items in ipairs(ol.items) do
-    local marker_ws = string.rep(" ", start_indent)
-    local marker_num = tostring(ol.start + i - 1) .. "."
-    local marker = string.format(
-      "%s%s%s",
-      marker_ws,
-      marker_num,
-      string.rep(" ", list_marker_size - #marker_num)
-    )
-
-    local list_item = M._render_markdown(
-      items,
-      indent + list_marker_size,
-      indent + list_marker_size,
-      list_marker_size,
-      list_depth + 1
-    ):gsub("^ *", "")
-
-    table.insert(lines, string.format("%s%s%s", marker, list_item, sep))
-    start_indent = indent
-  end
-end
-
----@param next_block docgen.grammar.markdown.result
----@param list_depth integer
----@return boolean
-local function list_end(next_block, list_depth)
-  if not next_block then return true end
-
-  if next_block.kind == "ul" or next_block.kind == "ol" then return list_depth == 0 end
-  return true
-end
-
----@param markdown docgen.grammar.markdown.result[]
----@param start_indent integer indentation amount for the first line
----@param indent integer indentation amount for subsequent lines
----@param list_marker_size integer? size of list marker including alignment padding minus indentation
----@param list_depth integer?
----@return string
-M._render_markdown = function(markdown, start_indent, indent, list_marker_size, list_depth)
-  list_depth = list_depth or 0
-  local res = {} ---@type string[]
-
-  for i, block in ipairs(markdown) do
-    local tabs = string.rep(" ", start_indent)
-    local next_block = markdown[i + 1]
-
-    if block.kind == "paragraph" then
-      ---@cast block docgen.grammar.markdown.paragraph
-      table.insert(res, render_paragraph(block.text, start_indent, indent, next_block))
-    elseif block.kind == "code" then
-      ---@cast block docgen.grammar.markdown.code_block
-      render_code_block(block, res, tabs)
-    elseif block.kind == "pre" then
-      ---@cast block docgen.grammar.markdown.pre_block
-      for line in vim.gsplit(vim.trim(block.lines):gsub("\n$", ""), "\n") do
-        table.insert(res, tabs .. line .. "\n")
-      end
-      table.insert(res, "\n")
-    elseif block.kind == "ul" then
-      ---@cast block docgen.grammar.markdown.ul
-      render_ul(block, res, start_indent, indent, list_marker_size, list_depth)
-      if list_end(next_block, list_depth) then table.insert(res, "\n") end
-    elseif block.kind == "ol" then
-      ---@cast block docgen.grammar.markdown.ol
-      render_ol(block, res, start_indent, indent, list_depth)
-      if list_end(next_block, list_depth) then table.insert(res, "\n") end
-    end
-
-    start_indent = indent
-  end
-
-  return (table.concat(res):gsub("[ \n]+$", ""))
-end
-
----@param markdown string
----@param start_indent integer indentation amount for the first line
----@param indent integer indentation amount for subsequent lines
----@return string
-M.render_markdown = function(markdown, start_indent, indent)
-  local md = parse_md(markdown)
-  return M._render_markdown(md, start_indent, indent, nil)
-end
-
 ---@param briefs string[]
 ---@return string
 M.render_briefs = function(briefs)
   local res = {}
   for _, brief in ipairs(briefs) do
-    table.insert(res, M.render_markdown(brief, 0, 0))
+    table.insert(res, render_md(brief, 0, 0))
   end
   return table.concat(res)
 end
