@@ -219,13 +219,32 @@ local function text_wrap(x, start_indent, indent)
   return (table.concat(parts):gsub("%s+\n", "\n"):gsub("\n+$", ""))
 end
 
+---@param node docgen.MDNode
+---@param start_indent integer
+---@param indent integer
+---@param level integer
+---@param next_node docgen.MDNode?
+local function render_paragraph(node, start_indent, indent, level, next_node)
+  local res = {}
+  for i, child in ipairs(node) do
+    local paragraphs =
+      table.concat(M.render_md(child, node[i + 1], start_indent, indent, level + 1))
+    for para_line in vim.gsplit(paragraphs, "\n") do
+      table.insert(res, text_wrap(para_line, start_indent, indent))
+      table.insert(res, "\n")
+    end
+  end
+  if next_node and next_node.type == "paragraph" then table.insert(res, "\n") end
+  return res
+end
+
 --- @param node docgen.MDNode
 --- @param next_node docgen.MDNode?
 --- @param start_indent integer
 --- @param indent integer
 --- @param level integer
 --- @return string[]
-local function render_md(node, next_node, start_indent, indent, level)
+function M.render_md(node, next_node, start_indent, indent, level)
   local parts = {} --- @type string[]
 
   -- For debugging
@@ -264,19 +283,11 @@ local function render_md(node, next_node, start_indent, indent, level)
       parts[#parts + 1] = text_wrap(text, start_indent, indent)
     else
       for i, child in ipairs(node) do
-        vim.list_extend(parts, render_md(child, node[i + 1], start_indent, indent, level + 1))
+        vim.list_extend(parts, M.render_md(child, node[i + 1], start_indent, indent, level + 1))
       end
     end
   elseif ntype == "paragraph" then
-    for i, child in ipairs(node) do
-      local paragraphs =
-        table.concat(render_md(child, node[i + 1], start_indent, indent, level + 1))
-      for para_line in vim.gsplit(paragraphs, "\n") do
-        parts[#parts + 1] = text_wrap(para_line, start_indent, indent)
-        parts[#parts + 1] = "\n"
-      end
-    end
-    if next_node and next_node.type == "paragraph" then parts[#parts + 1] = "\n" end
+    vim.list_extend(parts, render_paragraph(node, start_indent, indent, level, next_node))
   elseif ntype == "code_fence_content" then
     local lines = vim.split(node.text:gsub("\n%s*$", ""), "\n")
 
@@ -309,7 +320,7 @@ local function render_md(node, next_node, start_indent, indent, level)
     parts[#parts + 1] = "\n"
     for i, child in ipairs(node) do
       if child.type ~= "info_string" then
-        vim.list_extend(parts, render_md(child, node[i + 1], start_indent, indent, level + 1))
+        vim.list_extend(parts, M.render_md(child, node[i + 1], start_indent, indent, level + 1))
       end
     end
     parts[#parts + 1] = "<\n"
@@ -328,7 +339,7 @@ local function render_md(node, next_node, start_indent, indent, level)
     -- see my previous `list_marker_size` stuff
     for i, child in ipairs(node) do
       local sindent = i <= 2 and 0 or (indent + offset)
-      vim.list_extend(parts, render_md(child, node[i + 1], sindent, indent + offset, level + 1))
+      vim.list_extend(parts, M.render_md(child, node[i + 1], sindent, indent + offset, level + 1))
     end
   else
     if node.text then error(string.format("cannot render:\n%s", vim.inspect(node))) end
@@ -336,7 +347,7 @@ local function render_md(node, next_node, start_indent, indent, level)
       local start_indent0 = i == 1 and start_indent or indent
       local next = node[i + 1]
       local last_node = i == #node
-      vim.list_extend(parts, render_md(child, next, start_indent0, indent, level + 1))
+      vim.list_extend(parts, M.render_md(child, next, start_indent0, indent, level + 1))
 
       -- if ntype ~= "list" and not last_node then
       --   if next_node.type ~= "list" then parts[#parts + 1] = "\n" end
@@ -391,7 +402,7 @@ end
 function M.md_to_vimdoc(text, start_indent, indent)
   -- Add an extra newline so the parser can properly capture ending ```
   local parsed = parse_md(text .. "\n")
-  local ret = render_md(parsed, nil, start_indent, indent, 0)
+  local ret = M.render_md(parsed, nil, start_indent, indent, 0)
 
   local lines = vim.split(table.concat(ret):gsub(NBSP, " "), "\n")
 
