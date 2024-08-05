@@ -435,9 +435,34 @@ another paragraph for the `y` parameter. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBB
     ]]
       assert_md(input, expect, 4, 4)
     end)
+
+    it("one continous line", function()
+      local input =
+        "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
+      local expect =
+        "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
+      assert_md(input, expect)
+    end)
+
+    it("don't split `inline code` when wrapping lines", function()
+      local input = [[
+here is a line that over 78 chars so it should be wrapped, just not at `{ a = 1, b = 2 }`. That should be kept together.
+    ]]
+      local expect = [[
+here is a line that over 78 chars so it should be wrapped, just not at
+`{ a = 1, b = 2 }`. That should be kept together.
+    ]]
+      assert_md(input, expect)
+    end)
+
+    it("`inline` shouldn't result in extra spaces", function()
+      local input = "hello `world` hello"
+      local expect = "hello `world` hello"
+      assert_md(input, expect)
+    end)
   end)
 
-  pending("code blocks", function()
+  describe("code blocks", function()
     it("no language", function()
       local input = [[
 ```
@@ -505,7 +530,7 @@ print('world')
     end)
   end)
 
-  pending("pre blocks", function()
+  describe("pre blocks", function()
     it("basic", function()
       local input = [[
 <pre>
@@ -539,7 +564,7 @@ This is useful if you want to draw a table or write some code
     end)
   end)
 
-  pending("ul", function()
+  describe("ul", function()
     it("ul with paragraphs", function()
       local input = [[
 - item 1
@@ -713,7 +738,7 @@ new paragraph
     end)
   end)
 
-  pending("ol", function()
+  describe("ol", function()
     it("mixed", function()
       local expect
       local input = [[
@@ -789,31 +814,5 @@ new paragraph
 <
     ]]
     assert_md(input, expect, 4, 4)
-  end)
-
-  it("one continous line", function()
-    local input = "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
-    local expect =
-      "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
-    assert_md(input, expect)
-  end)
-
-  pending("text_wrap shenanigans", function()
-    it("don't split `inline code` when wrapping lines", function()
-      local input = [[
-here is a line that over 78 chars so it should be wrapped, just not at `{ a = 1, b = 2 }`. That should be kept together.
-    ]]
-      local expect = [[
-here is a line that over 78 chars so it should be wrapped, just not at
-`{ a = 1, b = 2 }`. That should be kept together.
-    ]]
-      assert_md(input, expect)
-    end)
-
-    it("`inline` shouldn't result in extra spaces", function()
-      local input = "hello `world` hello"
-      local expect = "hello `world` hello"
-      assert_md(input, expect)
-    end)
   end)
 end)

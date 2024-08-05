@@ -268,7 +268,6 @@ local function render_md(node, next_node, start_indent, indent, level)
       end
     end
   elseif ntype == "paragraph" then
-    vim.print("node", node)
     for i, child in ipairs(node) do
       local paragraphs =
         table.concat(render_md(child, node[i + 1], start_indent, indent, level + 1))
@@ -399,6 +398,7 @@ function M.md_to_vimdoc(text, start_indent, indent)
   lines = vim.tbl_map(align_tags(), lines)
 
   local s = table.concat(lines, "\n")
+  s = (s:gsub("[ \n]+$", ""))
 
   -- Reduce whitespace in code-blocks
   -- s = s:gsub("\n+%s*>([a-z]+)\n", " >%1\n")
