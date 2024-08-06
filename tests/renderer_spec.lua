@@ -533,7 +533,7 @@ print('world')
   describe("pre blocks", function()
     it("basic", function()
       local input = [[
-<pre>
+  <pre>
 You can disable formatting with a
 pre block.
 This is useful if you want to draw a table or write some code

@@ -224,6 +224,7 @@ end
 ---@param indent integer
 ---@param level integer
 ---@param next_node docgen.MDNode?
+---@return string[]
 local function render_paragraph(node, start_indent, indent, level, next_node)
   local res = {}
   for i, child in ipairs(node) do
@@ -235,6 +236,60 @@ local function render_paragraph(node, start_indent, indent, level, next_node)
     end
   end
   if next_node and next_node.type == "paragraph" then table.insert(res, "\n") end
+  return res
+end
+
+---@param node docgen.MDNode
+---@param start_indent integer
+---@param indent integer
+---@param level integer
+---@return string[]
+local function render_fenced_code_block(node, start_indent, indent, level)
+  local res = {}
+  table.insert(res, ">")
+  for _, child in ipairs(node) do
+    if child.type == "info_string" then
+      table.insert(res, child.text)
+      break
+    end
+  end
+  table.insert(res, "\n")
+  for i, child in ipairs(node) do
+    if child.type ~= "info_string" then
+      vim.list_extend(res, M.render_md(child, node[i + 1], start_indent, indent, level + 1))
+    end
+  end
+  table.insert(res, "<\n")
+  return res
+end
+
+---@param node docgen.MDNode
+---@param start_indent integer
+---@param indent integer
+---@param level integer
+---@return string[]
+local function render_code_fence_content(node, start_indent, indent, level)
+  local res = {}
+  local lines = vim.split(node.text:gsub("\n%s*$", ""), "\n")
+
+  local cindent = start_indent == 0 and INDENTATION or indent
+  if level > 3 then
+    -- The tree-sitter markdown parser doesn't parse the code blocks indents
+    -- correctly in lists. Fudge it!
+    lines[1] = "    " .. lines[1] -- ¯\_(ツ)_/¯
+    cindent = indent - level
+    local _, initial_indent = lines[1]:find("^%s*")
+    initial_indent = initial_indent + cindent
+    if initial_indent < indent then cindent = indent - INDENTATION end
+  end
+
+  for _, l in ipairs(lines) do
+    if #l > 0 then
+      table.insert(res, string.rep(" ", cindent))
+      table.insert(res, l)
+    end
+    table.insert(res, "\n")
+  end
   return res
 end
 
@@ -289,51 +344,23 @@ function M.render_md(node, next_node, start_indent, indent, level)
   elseif ntype == "paragraph" then
     vim.list_extend(parts, render_paragraph(node, start_indent, indent, level, next_node))
   elseif ntype == "code_fence_content" then
-    local lines = vim.split(node.text:gsub("\n%s*$", ""), "\n")
-
-    local cindent = indent == "" and INDENTATION or indent
-    if level > 3 then
-      -- The tree-sitter markdown parser doesn't parse the code blocks indents
-      -- correctly in lists. Fudge it!
-      lines[1] = "    " .. lines[1] -- ¯\_(ツ)_/¯
-      cindent = indent - level
-      local _, initial_indent = lines[1]:find("^%s*")
-      initial_indent = initial_indent + cindent
-      if initial_indent < indent then cindent = indent - INDENTATION end
-    end
-
-    for _, l in ipairs(lines) do
-      if #l > 0 then
-        parts[#parts + 1] = string.rep(" ", cindent)
-        parts[#parts + 1] = l
-      end
-      parts[#parts + 1] = "\n"
-    end
+    vim.list_extend(parts, render_code_fence_content(node, start_indent, indent, level))
   elseif ntype == "fenced_code_block" then
-    parts[#parts + 1] = ">"
-    for _, child in ipairs(node) do
-      if child.type == "info_string" then
-        parts[#parts + 1] = child.text
-        break
-      end
-    end
-    parts[#parts + 1] = "\n"
-    for i, child in ipairs(node) do
-      if child.type ~= "info_string" then
-        vim.list_extend(parts, M.render_md(child, node[i + 1], start_indent, indent, level + 1))
-      end
-    end
-    parts[#parts + 1] = "<\n"
+    vim.list_extend(parts, render_fenced_code_block(node, start_indent, indent, level))
   elseif ntype == "html_block" then
-    local text = node.text:gsub("^<pre>", "")
+    assert(node.text:find("^<pre>"), "Only support <pre> html blocks, got: ", node.text)
+    local text = node.text:gsub("^<pre>\n?", "")
     text = text:gsub("</pre>%s*$", "")
-    parts[#parts + 1] = text
+    local tab = level <= 2 and string.rep(" ", start_indent) or string.rep(" ", indent)
+    for line in vim.gsplit(text, "\n") do
+      parts[#parts + 1] = string.format("%s%s\n", tab, line)
+    end
   elseif ntype == "list_marker_dot" then
     parts[#parts + 1] = node.text
   elseif contains(ntype, { "list_marker_minus", "list_marker_star" }) then
     parts[#parts + 1] = "• "
   elseif ntype == "list_item" then
-    parts[#parts + 1] = string.rep(" ", indent)
+    parts[#parts + 1] = string.rep(" ", level <= 2 and start_indent or indent)
     local offset = node[1].type == "list_marker_dot" and 3 or 2
     -- TODO: need to account for different list marker sizes
     -- see my previous `list_marker_size` stuff
@@ -369,6 +396,7 @@ function M.render_md(node, next_node, start_indent, indent, level)
 
   if add_tag then parts[#parts + 1] = "</" .. ntype .. ">" end
 
+  vim.print(parts)
   return parts
 end
 
