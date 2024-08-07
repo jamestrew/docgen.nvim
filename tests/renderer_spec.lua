@@ -434,6 +434,14 @@ another paragraph for the `y` parameter. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBB
     BBBBB
     ]]
       assert_md(input, expect, 4, 4)
+
+      expect = [[
+    another string to append to 'foo'
+
+        another paragraph for the `y` parameter.
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBB
+    ]]
+      assert_md(input, expect, 4, 8)
     end)
 
     it("one continous line", function()

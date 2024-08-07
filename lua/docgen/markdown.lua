@@ -10,62 +10,6 @@ local NBSP = string.char(160)
 
 local M = {}
 
---- Wrap text to a given width based on indentation. Treats `inline code` as a
---- single word to avoid splitting it during wrapping.
----@param text string
----@param start_indent integer number of spaces to indent the first line
----@param indents integer number of spaces to indent subsequent lines
----@return string
-local text_wrap_other = function(text, start_indent, indents)
-  local lines = {}
-  local sindent = string.rep(" ", start_indent)
-  local indent = string.rep(" ", indents)
-  local line = sindent
-
-  local i = 1
-  while i <= #text do
-    local word ---@type string
-
-    if text:sub(i, i) == "`" then
-      local code_end_idx = text:find("`", i + 1)
-      if code_end_idx then
-        word = text:sub(i, code_end_idx)
-        local _, next_word_start = text:find("%s+", code_end_idx + 1)
-        if next_word_start then
-          word = text:sub(i, next_word_start - 1)
-          i = next_word_start + 1
-        else
-          i = code_end_idx + 1
-        end
-      else
-        word = text:sub(i)
-        i = #text + 1
-      end
-    else
-      local space_start_idx, space_end_idx = text:find("%s+", i)
-      if space_start_idx then
-        word = text:sub(i, space_start_idx - 1)
-        i = space_end_idx + 1
-      else
-        word = text:sub(i)
-        i = #text + 1
-      end
-    end
-
-    if line == sindent then
-      line = sindent .. word
-    elseif #line + #word + 1 > TEXT_WIDTH then
-      table.insert(lines, line)
-      line = indent .. word
-    else
-      line = line .. " " .. word
-    end
-  end
-
-  table.insert(lines, line)
-  return table.concat(lines, "\n")
-end
-
 local function contains(t, xs)
   return vim.tbl_contains(xs, t)
 end
@@ -221,17 +165,17 @@ end
 
 ---@param node docgen.MDNode
 ---@param start_indent integer
----@param indent integer
----@param level integer
+---@param next_indent integer
+---@param list_depth integer
 ---@param next_node docgen.MDNode?
 ---@return string[]
-local function render_paragraph(node, start_indent, indent, level, next_node)
+local function render_paragraph(node, start_indent, next_indent, list_depth, next_node)
   local res = {}
   for i, child in ipairs(node) do
     local paragraphs =
-      table.concat(M.render_md(child, node[i + 1], start_indent, indent, level + 1))
+      table.concat(M.render_md(child, node[i + 1], start_indent, next_indent, list_depth))
     for para_line in vim.gsplit(paragraphs, "\n") do
-      table.insert(res, text_wrap(para_line, start_indent, indent))
+      table.insert(res, text_wrap(para_line, start_indent, next_indent))
       table.insert(res, "\n")
     end
   end
@@ -296,10 +240,10 @@ end
 --- @param node docgen.MDNode
 --- @param next_node docgen.MDNode?
 --- @param start_indent integer
---- @param indent integer
---- @param level integer
+--- @param next_indent integer
+--- @param list_depth integer
 --- @return string[]
-function M.render_md(node, next_node, start_indent, indent, level)
+function M.render_md(node, next_node, start_indent, next_indent, list_depth)
   local parts = {} --- @type string[]
 
   -- For debugging
@@ -335,23 +279,26 @@ function M.render_md(node, next_node, start_indent, indent, level)
   elseif ntype == "inline" then
     if #node == 0 then
       local text = assert(node.text)
-      parts[#parts + 1] = text_wrap(text, start_indent, indent)
+      parts[#parts + 1] = text_wrap(text, start_indent, next_indent)
     else
       for i, child in ipairs(node) do
-        vim.list_extend(parts, M.render_md(child, node[i + 1], start_indent, indent, level + 1))
+        vim.list_extend(
+          parts,
+          M.render_md(child, node[i + 1], next_indent, next_indent, list_depth)
+        )
       end
     end
   elseif ntype == "paragraph" then
-    vim.list_extend(parts, render_paragraph(node, start_indent, indent, level, next_node))
+    vim.list_extend(parts, render_paragraph(node, start_indent, next_indent, list_depth, next_node))
   elseif ntype == "code_fence_content" then
-    vim.list_extend(parts, render_code_fence_content(node, start_indent, indent, level))
+    vim.list_extend(parts, render_code_fence_content(node, start_indent, next_indent, list_depth))
   elseif ntype == "fenced_code_block" then
-    vim.list_extend(parts, render_fenced_code_block(node, start_indent, indent, level))
+    vim.list_extend(parts, render_fenced_code_block(node, start_indent, next_indent, list_depth))
   elseif ntype == "html_block" then
     assert(node.text:find("^<pre>"), "Only support <pre> html blocks, got: ", node.text)
     local text = node.text:gsub("^<pre>\n?", "")
     text = text:gsub("</pre>%s*$", "")
-    local tab = level <= 2 and string.rep(" ", start_indent) or string.rep(" ", indent)
+    local tab = list_depth <= 2 and string.rep(" ", start_indent) or string.rep(" ", next_indent)
     for line in vim.gsplit(text, "\n") do
       parts[#parts + 1] = string.format("%s%s\n", tab, line)
     end
@@ -360,21 +307,24 @@ function M.render_md(node, next_node, start_indent, indent, level)
   elseif contains(ntype, { "list_marker_minus", "list_marker_star" }) then
     parts[#parts + 1] = "• "
   elseif ntype == "list_item" then
-    parts[#parts + 1] = string.rep(" ", level <= 2 and start_indent or indent)
+    parts[#parts + 1] = string.rep(" ", list_depth <= 3 and start_indent or next_indent)
     local offset = node[1].type == "list_marker_dot" and 3 or 2
     -- TODO: need to account for different list marker sizes
     -- see my previous `list_marker_size` stuff
     for i, child in ipairs(node) do
-      local sindent = i <= 2 and 0 or (indent + offset)
-      vim.list_extend(parts, M.render_md(child, node[i + 1], sindent, indent + offset, level + 1))
+      local sindent = i <= 2 and 0 or (next_indent + offset)
+      vim.list_extend(
+        parts,
+        M.render_md(child, node[i + 1], sindent, next_indent + offset, list_depth + 1)
+      )
     end
   else
     if node.text then error(string.format("cannot render:\n%s", vim.inspect(node))) end
     for i, child in ipairs(node) do
-      local start_indent0 = i == 1 and start_indent or indent
+      local start_indent0 = i == 1 and start_indent or next_indent
       local next = node[i + 1]
       local last_node = i == #node
-      vim.list_extend(parts, M.render_md(child, next, start_indent0, indent, level + 1))
+      vim.list_extend(parts, M.render_md(child, next, start_indent0, next_indent, list_depth + 1))
 
       -- if ntype ~= "list" and not last_node then
       --   if next_node.type ~= "list" then parts[#parts + 1] = "\n" end
@@ -396,7 +346,7 @@ function M.render_md(node, next_node, start_indent, indent, level)
 
   if add_tag then parts[#parts + 1] = "</" .. ntype .. ">" end
 
-  vim.print(parts)
+  -- vim.print(parts)
   return parts
 end
 
@@ -446,87 +396,4 @@ function M.md_to_vimdoc(text, start_indent, indent)
   return s
 end
 
-local md = [[
-some description about Foobar
-- here's a list
-    - it's nested
-
-```lua
-print('hello')
-```
-]]
-
--- vim.print(parse_md(md))
-
-local f = {
-  {
-    {
-      {
-        text = "some description about Foobar",
-        type = "inline",
-      },
-      text = "some description about Foobar\n",
-      type = "paragraph",
-    },
-    {
-      {
-        {
-          text = "- ",
-          type = "list_marker_minus",
-        },
-        {
-          {
-            text = "here's a list",
-            type = "inline",
-          },
-          text = "here's a list\n  ",
-          type = "paragraph",
-        },
-        {
-          {
-            {
-              text = "  - ",
-              type = "list_marker_minus",
-            },
-            {
-              {
-                text = "it's nested",
-                type = "inline",
-              },
-              text = "it's nested\n",
-              type = "paragraph",
-            },
-            type = "list_item",
-          },
-          type = "list",
-        },
-        type = "list_item",
-      },
-      type = "list",
-    },
-    {
-      {
-        type = "fenced_code_block_delimiter",
-      },
-      {
-        {
-          text = "lua",
-          type = "language",
-        },
-        text = "lua",
-        type = "info_string",
-      },
-      {
-        text = "print('hello')\n",
-        type = "code_fence_content",
-      },
-      {
-        type = "fenced_code_block_delimiter",
-      },
-      type = "fenced_code_block",
-    },
-    type = "section",
-  },
-  type = "document",
-}
 return M
