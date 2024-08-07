@@ -185,10 +185,10 @@ end
 
 ---@param node docgen.MDNode
 ---@param start_indent integer
----@param indent integer
----@param level integer
+---@param next_indent integer
+---@param list_depth integer
 ---@return string[]
-local function render_fenced_code_block(node, start_indent, indent, level)
+local function render_fenced_code_block(node, start_indent, next_indent, list_depth)
   local res = {}
   table.insert(res, ">")
   for _, child in ipairs(node) do
@@ -200,7 +200,7 @@ local function render_fenced_code_block(node, start_indent, indent, level)
   table.insert(res, "\n")
   for i, child in ipairs(node) do
     if child.type ~= "info_string" then
-      vim.list_extend(res, M.render_md(child, node[i + 1], start_indent, indent, level + 1))
+      vim.list_extend(res, M.render_md(child, node[i + 1], start_indent, next_indent, list_depth))
     end
   end
   table.insert(res, "<\n")
@@ -209,30 +209,44 @@ end
 
 ---@param node docgen.MDNode
 ---@param start_indent integer
----@param indent integer
----@param level integer
+---@param next_indent integer
 ---@return string[]
-local function render_code_fence_content(node, start_indent, indent, level)
+local function render_code_fence_content(node, start_indent, next_indent)
   local res = {}
   local lines = vim.split(node.text:gsub("\n%s*$", ""), "\n")
 
-  local cindent = start_indent == 0 and INDENTATION or indent
-  if level > 3 then
-    -- The tree-sitter markdown parser doesn't parse the code blocks indents
-    -- correctly in lists. Fudge it!
-    lines[1] = "    " .. lines[1] -- ¯\_(ツ)_/¯
-    cindent = indent - level
-    local _, initial_indent = lines[1]:find("^%s*")
-    initial_indent = initial_indent + cindent
-    if initial_indent < indent then cindent = indent - INDENTATION end
-  end
+  local cindent = start_indent == 0 and INDENTATION or next_indent
+  -- if list_depth > 0 then
+  --   -- The tree-sitter markdown parser doesn't parse the code blocks indents
+  --   -- correctly in lists. Fudge it!
+  --   lines[1] = "    " .. lines[1] -- ¯\_(ツ)_/¯
+  --   cindent = next_indent - list_depth
+  --   local _, initial_indent = lines[1]:find("^%s*")
+  --   initial_indent = initial_indent + cindent
+  --   if initial_indent < next_indent then cindent = next_indent - INDENTATION end
+  -- end
 
+  local tab = string.rep(" ", cindent)
   for _, l in ipairs(lines) do
     if #l > 0 then
-      table.insert(res, string.rep(" ", cindent))
+      table.insert(res, tab)
       table.insert(res, l)
     end
     table.insert(res, "\n")
+  end
+  return res
+end
+
+---@param node docgen.MDNode
+---@param start_indent integer
+---@return string[]
+local function render_pre_block(node, start_indent)
+  local res = {}
+  local text = node.text:gsub("^<pre>\n?", "")
+  text = text:gsub("</pre>%s*$", "")
+  local tab = string.rep(" ", start_indent)
+  for line in vim.gsplit(text, "\n") do
+    table.insert(res, string.format("%s%s\n", tab, line))
   end
   return res
 end
@@ -291,17 +305,12 @@ function M.render_md(node, next_node, start_indent, next_indent, list_depth)
   elseif ntype == "paragraph" then
     vim.list_extend(parts, render_paragraph(node, start_indent, next_indent, list_depth, next_node))
   elseif ntype == "code_fence_content" then
-    vim.list_extend(parts, render_code_fence_content(node, start_indent, next_indent, list_depth))
+    vim.list_extend(parts, render_code_fence_content(node, start_indent, next_indent))
   elseif ntype == "fenced_code_block" then
     vim.list_extend(parts, render_fenced_code_block(node, start_indent, next_indent, list_depth))
   elseif ntype == "html_block" then
     assert(node.text:find("^<pre>"), "Only support <pre> html blocks, got: ", node.text)
-    local text = node.text:gsub("^<pre>\n?", "")
-    text = text:gsub("</pre>%s*$", "")
-    local tab = list_depth <= 2 and string.rep(" ", start_indent) or string.rep(" ", next_indent)
-    for line in vim.gsplit(text, "\n") do
-      parts[#parts + 1] = string.format("%s%s\n", tab, line)
-    end
+    vim.list_extend(parts, render_pre_block(node, start_indent))
   elseif ntype == "list_marker_dot" then
     parts[#parts + 1] = node.text
   elseif contains(ntype, { "list_marker_minus", "list_marker_star" }) then
