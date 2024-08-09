@@ -278,9 +278,11 @@ local function render_fields_or_params(objs, generics, classes)
         if #pty > TEXT_WIDTH - indent then
           vim.list_extend(res, { " ", pty, "\n" })
           table.insert(res, M.render_markdown(desc, indent_offset, indent_offset))
+          table.insert(res, "\n")
         else
           desc = string.format("%s %s", pty, desc)
-          table.insert(res, M.render_markdown(desc, 1, indent_offset))
+          desc = M.render_markdown(desc, #pname, indent_offset):gsub("^ *", "") -- FIX?
+          table.insert(res, string.format(" %s\n", desc))
         end
       else
         table.insert(res, string.format("%s %s\n", pname, pty))
@@ -289,6 +291,7 @@ local function render_fields_or_params(objs, generics, classes)
       if desc then
         table.insert(res, pname)
         table.insert(res, M.render_markdown(desc, 1, indent_offset))
+        table.insert(res, "\n")
       end
     end
   end
@@ -315,12 +318,15 @@ local function render_class(class, classes)
       resolve_class_parents(class, classes)
     else
       local text = string.format("Extends |%s|", class.parent)
-      table.insert(res, M.render_markdown(text, TAB_WIDTH, TAB_WIDTH))
+      table.insert(res, M.render_markdown(text, TAB_WIDTH, TAB_WIDTH)) -- FIX?
       table.insert(res, "\n")
     end
   end
 
-  if class.desc then table.insert(res, M.render_markdown(class.desc, TAB_WIDTH, TAB_WIDTH)) end
+  if class.desc then
+    table.insert(res, M.render_markdown(class.desc, TAB_WIDTH, TAB_WIDTH))
+    table.insert(res, "\n")
+  end
 
   local fields_text = render_fields_or_params(class.fields, nil, classes)
   if not fields_text:match("^%s*$") then
@@ -398,6 +404,7 @@ local function render_fun_returns(returns, generics, classes)
 
     local offset = TAB_WIDTH * 2
     table.insert(res, M.render_markdown(table.concat(blk, " "), offset, offset))
+    table.insert(res, "\n")
   end
 
   return table.concat(res)
@@ -434,7 +441,7 @@ local function render_fun(fun, classes, section, config)
 
   if fun.desc then
     table.insert(res, M.render_markdown(fun.desc, TAB_WIDTH, TAB_WIDTH))
-    table.insert(res, "\n")
+    table.insert(res, "\n\n")
   end
 
   if fun.notes then
@@ -442,7 +449,7 @@ local function render_fun(fun, classes, section, config)
     for _, note in ipairs(fun.notes) do
       table.insert(
         res,
-        string.format("%s  • %s", TAB, M.render_markdown(note.desc, 0, bullet_offset))
+        string.format("%s  • %s\n", TAB, M.render_markdown(note.desc, 0, bullet_offset))
       )
     end
     table.insert(res, "\n")
@@ -475,7 +482,7 @@ local function render_fun(fun, classes, section, config)
     for _, s in ipairs(fun.see) do
       table.insert(
         res,
-        string.format("%s  • %s", TAB, M.render_markdown(s.desc, 0, bullet_offset))
+        string.format("%s  • %s\n", TAB, M.render_markdown(s.desc, 0, bullet_offset))
       )
     end
     table.insert(res, "\n")

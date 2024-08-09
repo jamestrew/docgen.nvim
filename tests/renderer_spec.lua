@@ -347,7 +347,7 @@ describe("classes", function()
     assert_lines(expect, actual, { classes = classes })
   end
 
-  pending("basic", function()
+  it("basic", function()
     local input = [[
 --- some description about Foobar
 --- - here's a list
