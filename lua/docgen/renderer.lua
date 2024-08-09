@@ -506,11 +506,29 @@ end
 local function render_paragraph(p, start_indent, next_indent, next_node)
   next_node = vim.F.if_nil(next_node, {})
   local res = {}
+  local inner = p.inner
 
-  if type(p.inner) == "string" then
-    ---@diagnostic disable-next-line: param-type-mismatch
-    table.insert(res, text_wrap(p.inner, start_indent, next_indent))
+  if type(inner) == "string" then
+    ---@cast inner string
+    table.insert(res, text_wrap(inner, start_indent, next_indent))
+  else
+    ---@cast inner docgen.MDNode__[]
+    local curr_line = {}
+    for _, node in ipairs(inner) do
+      if node.type == "text" then
+        table.insert(curr_line, node.text)
+      elseif node.type == "code_span" then
+        table.insert(curr_line, node.text)
+      elseif node.type == "html_tag" and node.text == "<br>" then
+        table.insert(res, text_wrap(table.concat(curr_line), start_indent, next_indent))
+        curr_line = {}
+        table.insert(res, "\n")
+      end
+    end
+
+    table.insert(res, text_wrap(table.concat(curr_line), start_indent, next_indent))
   end
+  table.insert(res, "\n")
 
   if next_node.kind == "paragraph" then table.insert(res, "\n") end
   return res
