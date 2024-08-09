@@ -735,24 +735,24 @@ function M.render_section(section, briefs, funs, classes, all_classes)
     res,
     string.format("%s%" .. (TEXT_WIDTH - #section.title) .. "s\n", section.title, brief_tag)
   )
+  table.insert(res, "\n")
 
   local briefs_text = M.render_briefs(briefs)
   if not briefs_text:match("^%s*$") then
-    table.insert(res, "\n")
     table.insert(res, briefs_text)
-    table.insert(res, "\n")
+    table.insert(res, "\n\n")
   end
 
   local classes_text = M.render_classes(classes, all_classes)
   if not classes_text:match("^%s*$") then
-    table.insert(res, "\n")
     table.insert(res, classes_text)
+    table.insert(res, "\n")
   end
 
   local funs_text = M.render_funs(funs, classes, section)
   if not funs_text:match("^%s*$") then
-    table.insert(res, "\n")
     table.insert(res, funs_text)
+    table.insert(res, "\n")
   end
 
   return table.concat(res)
