@@ -1,6 +1,5 @@
 local parser = require("docgen.parser")
 local renderer = require("docgen.renderer")
-local render_md = require("docgen.markdown").md_to_vimdoc
 
 local function string_literal(str)
   str = string.gsub(str, "    ", "󰌒")
@@ -394,7 +393,7 @@ describe("render_markdown", function()
     indent = indent or 0
     input = vim.trim(input) .. "\n"
     expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
-    local actual = render_md(input, start_indent, indent)
+    local actual = renderer.render_markdown(input, start_indent, indent)
     assert_lines(expect, actual, { start_indent = start_indent, indent = indent })
   end
 
@@ -573,7 +572,17 @@ This is useful if you want to draw a table or write some code
   end)
 
   describe("ul", function()
-    it("ul with paragraphs", function()
+    it("basic", function()
+      local input = [[
+- item 1
+      ]]
+      local expect = [[
+• item 1
+      ]]
+      assert_md(input, expect)
+    end)
+
+    it("with paragraphs", function()
       local input = [[
 - item 1
 

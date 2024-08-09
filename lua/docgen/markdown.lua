@@ -1,5 +1,5 @@
---- @class (private) docgen.MDNode
---- @field [integer] docgen.MDNode
+--- @class (private) docgen.MDNode__
+--- @field [integer] docgen.MDNode__
 --- @field type string
 --- @field text? string
 
@@ -9,10 +9,6 @@ local TEXT_WIDTH = 78
 local NBSP = string.char(160)
 
 local M = {}
-
-local function contains(t, xs)
-  return vim.tbl_contains(xs, t)
-end
 
 --- @param txt string
 --- @param srow integer
@@ -44,13 +40,13 @@ local function slice_text(txt, srow, scol, erow, ecol)
 end
 
 --- @param text string
---- @return docgen.MDNode
+--- @return docgen.MDNode__
 local function parse_md_inline(text)
   local parser = vim.treesitter.languagetree.new(text, "markdown_inline")
   local root = parser:parse(true)[1]:root()
 
   --- @param node TSNode
-  --- @return docgen.MDNode?
+  --- @return docgen.MDNode__?
   local function extract(node)
     local ntype = node:type()
 
@@ -92,7 +88,7 @@ local function parse_md_inline(text)
 end
 
 --- @param text string
---- @return docgen.MDNode
+--- @return docgen.MDNode__
 local function parse_md(text)
   local parser = vim.treesitter.languagetree.new(text, "markdown", {
     injections = { markdown = "" },
@@ -110,11 +106,11 @@ local function parse_md(text)
   }
 
   --- @param node TSNode
-  --- @return docgen.MDNode?
+  --- @return docgen.MDNode__?
   local function extract(node)
     local ntype = node:type()
 
-    if ntype:match("^%p$") or contains(ntype, { "block_continuation" }) then return end
+    if ntype:match("^%p$") then return end
 
     --- @type table<any,any>
     local ret = { type = ntype }
@@ -163,11 +159,11 @@ local function text_wrap(x, start_indent, indent)
   return (table.concat(parts):gsub("%s+\n", "\n"):gsub("\n+$", ""))
 end
 
----@param node docgen.MDNode
+---@param node docgen.MDNode__
 ---@param start_indent integer
 ---@param next_indent integer
 ---@param list_depth integer
----@param next_node docgen.MDNode?
+---@param next_node docgen.MDNode__?
 ---@return string[]
 local function render_paragraph(node, start_indent, next_indent, list_depth, next_node)
   local res = {}
@@ -183,7 +179,7 @@ local function render_paragraph(node, start_indent, next_indent, list_depth, nex
   return res
 end
 
----@param node docgen.MDNode
+---@param node docgen.MDNode__
 ---@param start_indent integer
 ---@param next_indent integer
 ---@param list_depth integer
@@ -200,14 +196,14 @@ local function render_fenced_code_block(node, start_indent, next_indent, list_de
   table.insert(res, "\n")
   for i, child in ipairs(node) do
     if child.type ~= "info_string" then
-      vim.list_extend(res, M.render_md(child, node[i + 1], start_indent, next_indent, list_depth))
+      table.insert(res, M.render_md(child, node[i + 1], start_indent, next_indent, list_depth))
     end
   end
   table.insert(res, "<\n")
   return res
 end
 
----@param node docgen.MDNode
+---@param node docgen.MDNode__
 ---@param start_indent integer
 ---@param next_indent integer
 ---@return string[]
@@ -237,7 +233,7 @@ local function render_code_fence_content(node, start_indent, next_indent)
   return res
 end
 
----@param node docgen.MDNode
+---@param node docgen.MDNode__
 ---@param start_indent integer
 ---@return string[]
 local function render_pre_block(node, start_indent)
@@ -251,13 +247,105 @@ local function render_pre_block(node, start_indent)
   return res
 end
 
---- @param node docgen.MDNode
---- @param next_node docgen.MDNode?
---- @param start_indent integer
---- @param next_indent integer
---- @param list_depth integer
---- @return string[]
-function M.render_md(node, next_node, start_indent, next_indent, list_depth)
+---@alias docgen.MDNode.List.kind "ul" | "ol"
+
+---@type table<string, docgen.MDNode.List.kind>
+local LIST_MARKERS = {
+  list_marker_minus = "ul",
+  list_marker_plus = "ul",
+  list_marker_star = "ul",
+  list_marker_dot = "ol",
+}
+
+-- ---@class (private) docgen.MDNode.List : docgen.MDNode
+-- ---@field kind 'ul' | 'ol'
+-- ---@field tight boolean
+-- ---@field start integer?
+-- ---@field items docgen.MDNode[]
+local List = {}
+List.__index = List
+
+---@param list docgen.MDNode__
+---@return docgen.MDNode.List
+function List:new(list)
+  local res = { tight = true }
+
+  local got_kind = false
+  local items = {}
+
+  for _, list_items in ipairs(list) do
+    list_items = vim
+      .iter(ipairs(list_items))
+      :filter(function(_, node)
+        if node.type == "block_continuation" then
+          res.tight = false
+          return false
+        elseif LIST_MARKERS[node.type] ~= nil then
+          if not got_kind then
+            res.kind = LIST_MARKERS[node.type]
+            res.start = tonumber(node.text:match("%d+"))
+            got_kind = true
+          end
+          return false
+        end
+        return true
+      end)
+      :map(function(_, node)
+        return node
+      end)
+      :totable()
+
+    table.insert(items, list_items)
+  end
+
+  res.items = items
+  return res
+end
+
+---@param ul_list docgen.MDNode.List
+---@param start_indent integer
+---@param next_indent integer
+---@param list_depth integer
+---@param list_marker_size integer?
+---@return string[]
+local function render_ul(ul_list, start_indent, next_indent, list_depth, list_marker_size)
+  list_marker_size = list_marker_size or 2 -- ie `• `
+  -- local sep = ul_list.tight and "" or "\n"
+  local sep = ul_list.tight and "\n" or "\n\n"
+  local res = {}
+
+  for _, list_item in ipairs(ul_list.items) do
+    local marker_ws = string.rep(" ", start_indent)
+    local marker = string.format("%s•%s", marker_ws, string.rep(" ", list_marker_size - 1))
+    local item_parts = {}
+    for i, item in ipairs(list_item) do
+      local child_part = M.render_md(
+        item,
+        ul_list[i + 1],
+        next_indent + list_marker_size,
+        next_indent + list_marker_size,
+        list_depth + 1,
+        list_marker_size
+      )
+      vim.list_extend(item_parts, child_part)
+      table.insert(item_parts, "\n")
+    end
+
+    local item_text = table.concat(item_parts):gsub("^ *", ""):gsub("[ \n]+$", "")
+    table.insert(res, string.format("%s%s%s", marker, item_text, sep))
+    start_indent = next_indent
+  end
+  return res
+end
+
+---@param node docgen.MDNode__
+---@param next_node docgen.MDNode__?
+---@param start_indent integer
+---@param next_indent integer
+---@param list_depth integer
+---@param list_marker_size integer?
+---@return string[]
+function M.render_md(node, next_node, start_indent, next_indent, list_depth, list_marker_size)
   local parts = {} --- @type string[]
 
   -- For debugging
@@ -355,7 +443,6 @@ function M.render_md(node, next_node, start_indent, next_indent, list_depth)
 
   if add_tag then parts[#parts + 1] = "</" .. ntype .. ">" end
 
-  -- vim.print(parts)
   return parts
 end
 
@@ -404,5 +491,51 @@ function M.md_to_vimdoc(text, start_indent, indent)
 
   return s
 end
+
+local s = [[
+- item 1
+
+- item 2
+]]
+
+vim.print(parse_md(s))
+
+local f = {
+  {
+    {
+      text = "- ",
+      type = "list_marker_minus",
+    },
+    {
+      {
+        text = "item 1",
+        type = "inline",
+      },
+      {
+        text = "",
+        type = "block_continuation",
+      },
+      text = "item 1\n",
+      type = "paragraph",
+    },
+    type = "list_item",
+  },
+  {
+    {
+      text = "- ",
+      type = "list_marker_minus",
+    },
+    {
+      {
+        text = "item 2",
+        type = "inline",
+      },
+      text = "item 2\n",
+      type = "paragraph",
+    },
+    type = "list_item",
+  },
+  type = "list",
+}
 
 return M
