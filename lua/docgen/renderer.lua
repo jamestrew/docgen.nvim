@@ -498,19 +498,73 @@ function M.render_funs(funs, classes, section, config)
   return table.concat(res)
 end
 
----@param p docgen.MDNode.Paragraph
+---@class (private) MDRenderer
+---@field md docgen.MDNode[]
+---@field start_indent integer
+---@field next_indent integer
+---@field list_marker_size integer
+---@field list_depth integer
+---@field lines string[]
+local MDRenderer = {}
+MDRenderer.__index = MDRenderer
+
+---@param md string
 ---@param start_indent integer
 ---@param next_indent integer
+function MDRenderer:new(md, start_indent, next_indent)
+  local rend = setmetatable({
+    md = parse_md(md),
+    start_indent = start_indent,
+    next_indent = next_indent,
+    list_marker_size = 0,
+    list_depth = 0,
+    lines = {},
+  }, MDRenderer)
+  return rend
+end
+
+function MDRenderer:render()
+  for i, node in ipairs(self.md) do
+    local tabs = string.rep(" ", self.start_indent)
+    local next_block = self.md[i + 1]
+
+    if node.kind == "paragraph" then
+      ---@cast node docgen.MDNode.Paragraph
+      self:_render_paragraph(node, next_block)
+    elseif node.kind == "code" then
+      ---@cast node docgen.MDNode.Code
+      self:_render_code_block(node, tabs)
+    elseif node.kind == "pre" then
+      ---@cast node docgen.MDNode.Html
+      for _, line in ipairs(node.lines) do
+        table.insert(self.lines, tabs .. line .. "\n")
+      end
+      table.insert(self.lines, "\n")
+    elseif node.kind == "ul" then
+      ---@cast node docgen.MDNode.List
+      -- render_ul(block, self.lines, self.start_indent, indent, list_marker_size, list_depth)
+      -- if list_end(next_block, list_depth) then table.insert(self.lines, "\n") end
+    elseif node.kind == "ol" then
+      ---@cast node docgen.MDNode.List
+      -- render_ol(block, self.lines, self.start_indent, indent, list_depth)
+      -- if list_end(next_block, list_depth) then table.insert(self.lines, "\n") end
+    end
+
+    self.start_indent = self.next_indent
+  end
+
+  return (table.concat(self.lines):gsub("[ \n]+$", ""))
+end
+
+---@param p docgen.MDNode.Paragraph
 ---@param next_node docgen.MDNode?
----@return string[]
-local function render_paragraph(p, start_indent, next_indent, next_node)
+function MDRenderer:_render_paragraph(p, next_node)
   next_node = vim.F.if_nil(next_node, {})
-  local res = {}
   local inner = p.inner
 
   if type(inner) == "string" then
     ---@cast inner string
-    table.insert(res, text_wrap(inner, start_indent, next_indent))
+    table.insert(self.lines, text_wrap(inner, self.start_indent, self.next_indent))
   else
     ---@cast inner docgen.MDNode__[]
     local curr_line = {}
@@ -520,88 +574,46 @@ local function render_paragraph(p, start_indent, next_indent, next_node)
       elseif node.type == "code_span" then
         table.insert(curr_line, node.text)
       elseif node.type == "html_tag" and node.text == "<br>" then
-        table.insert(res, text_wrap(table.concat(curr_line), start_indent, next_indent))
+        table.insert(
+          self.lines,
+          text_wrap(table.concat(curr_line), self.start_indent, self.next_indent)
+        )
         curr_line = {}
-        table.insert(res, "\n")
+        table.insert(self.lines, "\n")
       end
     end
 
-    table.insert(res, text_wrap(table.concat(curr_line), start_indent, next_indent))
+    table.insert(
+      self.lines,
+      text_wrap(table.concat(curr_line), self.start_indent, self.next_indent)
+    )
   end
-  table.insert(res, "\n")
+  table.insert(self.lines, "\n")
 
-  if next_node.kind == "paragraph" then table.insert(res, "\n") end
-  return res
+  if next_node.kind == "paragraph" then table.insert(self.lines, "\n") end
 end
 
 ---@param node docgen.MDNode.Code
 ---@param tabs string
----@param doc_lines string[]
----@return string[]
-local function render_code_block(node, tabs, doc_lines)
-  local res = {}
+function MDRenderer:_render_code_block(node, tabs)
   tabs = tabs == "" and TAB or tabs
 
-  local last_line = doc_lines[#doc_lines]
+  local last_line = self.lines[#self.lines]
   if last_line and last_line:match("^[ \n]*$") then
-    doc_lines[#doc_lines] = last_line:gsub("[ \n]+$", "")
-    table.insert(res, " ")
+    self.lines[#self.lines] = last_line:gsub("[ \n]+$", "")
+    table.insert(self.lines, " ")
   end
 
-  table.insert(res, string.format(">%s\n", node.lang or ""))
+  table.insert(self.lines, string.format(">%s\n", node.lang or ""))
   for _, line in ipairs(node.lines) do
-    table.insert(res, tabs .. line .. "\n")
+    table.insert(self.lines, tabs .. line .. "\n")
   end
-  table.insert(res, "<\n")
-
-  return res
-end
-
----@param markdown docgen.MDNode[]
----@param start_indent integer indentation amount for the first line
----@param indent integer indentation amount for subsequent lines
----@param list_marker_size integer? size of list marker including alignment padding minus indentation
----@param list_depth integer?
----@return string
-local function render_md(markdown, start_indent, indent, list_marker_size, list_depth)
-  list_depth = list_depth or 0
-  local res = {} ---@type string[]
-
-  for i, node in ipairs(markdown) do
-    local tabs = string.rep(" ", start_indent)
-    local next_block = markdown[i + 1]
-
-    if node.kind == "paragraph" then
-      ---@cast node docgen.MDNode.Paragraph
-      vim.list_extend(res, render_paragraph(node, start_indent, indent, next_block))
-    elseif node.kind == "code" then
-      ---@cast node docgen.MDNode.Code
-      vim.list_extend(res, render_code_block(node, tabs, res))
-    elseif node.kind == "pre" then
-      ---@cast node docgen.MDNode.Html
-      for _, line in ipairs(node.lines) do
-        table.insert(res, tabs .. line .. "\n")
-      end
-      table.insert(res, "\n")
-    elseif node.kind == "ul" then
-      ---@cast node docgen.MDNode.List
-      -- render_ul(block, res, start_indent, indent, list_marker_size, list_depth)
-      -- if list_end(next_block, list_depth) then table.insert(res, "\n") end
-    elseif node.kind == "ol" then
-      ---@cast node docgen.MDNode.List
-      -- render_ol(block, res, start_indent, indent, list_depth)
-      -- if list_end(next_block, list_depth) then table.insert(res, "\n") end
-    end
-
-    start_indent = indent
-  end
-
-  return (table.concat(res):gsub("[ \n]+$", ""))
+  table.insert(self.lines, "<\n")
 end
 
 function M.render_markdown(markdown, start_indent, next_indent)
-  local md = parse_md(markdown)
-  return render_md(md, start_indent, next_indent)
+  local renderer = MDRenderer:new(markdown, start_indent, next_indent)
+  return renderer:render()
 end
 
 ---@param briefs string[]
