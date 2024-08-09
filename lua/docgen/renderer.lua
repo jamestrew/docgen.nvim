@@ -534,6 +534,29 @@ local function render_paragraph(p, start_indent, next_indent, next_node)
   return res
 end
 
+---@param node docgen.MDNode.Code
+---@param tabs string
+---@param doc_lines string[]
+---@return string[]
+local function render_code_block(node, tabs, doc_lines)
+  local res = {}
+  tabs = tabs == "" and TAB or tabs
+
+  local last_line = doc_lines[#doc_lines]
+  if last_line and last_line:match("^[ \n]*$") then
+    doc_lines[#doc_lines] = last_line:gsub("[ \n]+$", "")
+    table.insert(res, " ")
+  end
+
+  table.insert(res, string.format(">%s\n", node.lang or ""))
+  for _, line in ipairs(node.lines) do
+    table.insert(res, tabs .. line .. "\n")
+  end
+  table.insert(res, "<\n")
+
+  return res
+end
+
 ---@param markdown docgen.MDNode[]
 ---@param start_indent integer indentation amount for the first line
 ---@param indent integer indentation amount for subsequent lines
@@ -553,7 +576,7 @@ local function render_md(markdown, start_indent, indent, list_marker_size, list_
       vim.list_extend(res, render_paragraph(node, start_indent, indent, next_block))
     elseif node.kind == "code" then
       ---@cast node docgen.MDNode.Code
-      -- render_code_block(block, res, tabs)
+      vim.list_extend(res, render_code_block(node, tabs, res))
     elseif node.kind == "pre" then
       ---@cast node docgen.MDNode.Html
       for _, line in ipairs(node.lines) do

@@ -130,7 +130,7 @@ local function parse_code_block(node, text)
   local res = { kind = "code" }
   for child, _ in node:iter_children() do
     local ntype = child:type()
-    if ntype == "fenced_code_lang" then
+    if ntype == "info_string" then
       res.lang = vim.treesitter.get_node_text(child, text)
     elseif ntype == "code_fence_content" then
       local content = vim.treesitter.get_node_text(child, text):gsub("\n$", "")
