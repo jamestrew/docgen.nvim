@@ -550,6 +550,8 @@ function MDRenderer:render()
         table.insert(self.lines, tabs .. line .. "\n")
       end
       table.insert(self.lines, "\n")
+    elseif node.kind == "br" then
+      table.insert(self.lines, "\n")
     elseif node.kind == "ul" then
       ---@cast node docgen.MDNode.List
       self:_render_ul(node)
@@ -606,11 +608,24 @@ function MDRenderer:_render_paragraph(p, next_node)
     ---@cast inner docgen.MDNode__[]
     local curr_line = {}
     for _, node in ipairs(inner) do
-      if node.type == "text" then
+      local ntype = node.type
+      if ntype == "text" then
         table.insert(curr_line, node.text)
-      elseif node.type == "code_span" then
+      elseif ntype == "code_span" then
         table.insert(curr_line, node.text)
-      elseif node.type == "html_tag" and node.text == "<br>" then
+      elseif ntype == "inline_link" then
+        table.insert(curr_line, string.format("*%s*", node[1].text))
+      elseif ntype == "shortcut_link" then
+        if node[1].text:find("^<.*>$") then
+          table.insert(curr_line, node[1].text)
+        else
+          table.insert(curr_line, string.format("|%s|", node[1].text))
+        end
+      elseif ntype == "backslash_escape" then
+        table.insert(curr_line, node.text)
+      elseif ntype == "emphasis" then
+        table.insert(curr_line, node.text:sub(2, -2))
+      elseif ntype == "html_tag" and node.text == "<br>" then
         table.insert(
           self.lines,
           text_wrap(table.concat(curr_line), self.start_indent, self.next_indent)
