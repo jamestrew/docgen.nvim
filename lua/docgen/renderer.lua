@@ -281,7 +281,7 @@ local function render_fields_or_params(objs, generics, classes)
           table.insert(res, "\n")
         else
           desc = string.format("%s %s", pty, desc)
-          desc = M.render_markdown(desc, #pname, indent_offset):gsub("^ *", "") -- FIX?
+          desc = M.render_markdown(desc, #pname, indent_offset):gsub("^ *", "")
           table.insert(res, string.format(" %s\n", desc))
         end
       else
@@ -689,7 +689,7 @@ function MDRenderer:_render_ol(node)
 end
 
 function M.render_markdown(markdown, start_indent, next_indent)
-  local md = parse_md(markdown)
+  local md = parse_md(markdown .. "\n")
   local renderer = MDRenderer:new(md, start_indent, next_indent)
   return renderer:render()
 end

@@ -385,6 +385,30 @@ describe("classes", function()
     ]]
     assert_classes(input, expect)
   end)
+
+  it("extends", function()
+    local input = [[
+---@nodoc
+---@class Person
+---@field name string
+---@field _private_field_1 string kinda private field
+---@field private private_field_2 string actually private
+---@field height number
+
+---@class Employee : Person
+---@field emp_id number
+    ]]
+
+    local expect = [[
+*Employee*
+    Extends |Person|
+
+    Fields: ~
+      • {emp_id}  (`number`)
+    ]]
+
+    assert_classes(input, expect)
+  end)
 end)
 
 describe("render_markdown", function()
