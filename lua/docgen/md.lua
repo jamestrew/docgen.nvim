@@ -87,7 +87,7 @@ local function parse_paragraph(node, text)
   local res = { kind = "paragraph" }
   local inline = parse_md_inline(vim.treesitter.get_node_text(node:child(0), text))
   if #inline == 0 then
-    res.inner = inline.text
+    res.inner = vim.trim(inline.text)
   else
     res.inner = inline
   end
@@ -118,6 +118,23 @@ local function parse_html_block(node, text)
   }
 end
 
+---@param lines string[]
+---@return string[]
+local function dedent_lines(lines)
+  local min_indent = math.huge
+  for _, line in ipairs(lines) do
+    if line ~= "" then
+      local indent = line:match("^%s*")
+      min_indent = math.min(min_indent, #indent)
+    end
+  end
+
+  for i, line in ipairs(lines) do
+    lines[i] = line:sub(min_indent + 1)
+  end
+  return lines
+end
+
 ---@class docgen.MDNode.Code
 ---@field kind 'code'
 ---@field lang string
@@ -133,8 +150,8 @@ local function parse_code_block(node, text)
     if ntype == "info_string" then
       res.lang = vim.treesitter.get_node_text(child, text)
     elseif ntype == "code_fence_content" then
-      local content = vim.treesitter.get_node_text(child, text):gsub("\n$", "")
-      res.lines = vim.split(content, "\n")
+      local content = vim.treesitter.get_node_text(child, text):gsub("[ \n]+$", "")
+      res.lines = dedent_lines(vim.split(content, "\n"))
     end
   end
 
@@ -160,7 +177,10 @@ local LIST_MARKERS = {
 ---@return docgen.MDNode.List
 local function parse_list(node, text)
   local res = { tight = true, items = {} }
-  local got_kind, got_tight = false, false
+  local got_kind = false
+
+  local list_text = vim.treesitter.get_node_text(node, text):gsub("[ \n]+$", "")
+  if list_text:find("\n\n") then res.tight = false end
 
   ---@param n TSNode
   local function parse_list_item(n)
@@ -179,23 +199,12 @@ local function parse_list(node, text)
 
       if ntype == "paragraph" then
         table.insert(items, parse_paragraph(child, text))
-        if not got_tight then
-          local count = child:child_count()
-          local last = assert(child:child(count - 1))
-          if last:type() == "block_continuation" then
-            got_tight = true
-            res.tight = false
-          end
-        end
       elseif ntype == "html_block" then
         table.insert(items, parse_html_block(child, text))
       elseif ntype == "fenced_code_block" then
         table.insert(items, parse_code_block(child, text))
       elseif ntype == "list" then
         table.insert(items, parse_list(child, text))
-      elseif ntype == "block_continuation" then
-        got_tight = true
-        res.tight = false
       end
     end
 
