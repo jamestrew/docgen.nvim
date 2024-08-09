@@ -45,6 +45,7 @@ describe("functions", function()
     title = "FOO_BAR",
     tag = "foo.bar",
     fn_prefix = "foo_bar",
+    fn_tag_prefix = "foo.bar",
   }
 
   local assert_funs = function(input, expect)

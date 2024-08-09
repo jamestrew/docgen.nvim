@@ -371,7 +371,7 @@ local function render_fun_header(fun, section)
   if fun.classvar then
     tag = string.format("*%s:%s%s*", fun.classvar, fun.name, fn_suffix)
   else
-    tag = string.format("*%s.%s%s*", section.tag, fun.name, fn_suffix)
+    tag = string.format("*%s.%s%s*", section.fn_tag_prefix, fun.name, fn_suffix)
   end
 
   local header_width = #proto + #tag

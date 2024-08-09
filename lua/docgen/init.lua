@@ -24,6 +24,7 @@ local M = {}
 ---@field title string
 ---@field tag string
 ---@field fn_prefix string
+---@field fn_tag_prefix string
 
 ---@class docgen.FileSection
 ---@field [1] string filepath from which to generate the section from
@@ -50,6 +51,9 @@ local M = {}
 ---
 --- if omitted, generated from the filename same as `section_title` but in lowercase
 ---@field fn_prefix string?
+---
+--- tag prefix for functions, if omitted, uses section tag as prefix
+---@field fn_tag_prefix string?
 
 ---@param filename string
 ---@param plugin_name string
@@ -85,18 +89,22 @@ end
 local function make_section(file, config)
   if type(file) == "string" then
     local title = section_title(file, config.name)
+    local tag = section_tag(title, config.name)
     return {
       title = title,
-      tag = section_tag(title, config.name),
+      tag = tag,
       fn_prefix = title:lower(),
+      fn_tag_prefix = vim.F.if_nil(config.fn_tag_prefix or tag),
     }
   end
 
   local path_title = section_title(file[1], config.name)
+  local tag = vim.F.if_nil(file.tag, section_tag(path_title, config.name))
   return {
     title = vim.F.if_nil(file.title, path_title),
-    tag = vim.F.if_nil(file.tag, section_tag(path_title, config.name)),
+    tag = tag,
     fn_prefix = vim.F.if_nil(file.fn_prefix, path_title:lower()),
+    fn_tag_prefix = vim.F.if_nil(file.fn_tag_prefix, tag),
   }
 end
 
