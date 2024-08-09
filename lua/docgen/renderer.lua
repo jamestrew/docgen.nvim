@@ -549,8 +549,8 @@ function MDRenderer:render()
       if self:_list_end(next_block) then table.insert(self.lines, "\n") end
     elseif node.kind == "ol" then
       ---@cast node docgen.MDNode.List
-      -- render_ol(block, self.lines, self.start_indent, indent, list_depth)
-      -- if list_end(next_block, list_depth) then table.insert(self.lines, "\n") end
+      self:_render_ol(node)
+      if self:_list_end(next_block) then table.insert(self.lines, "\n") end
     end
 
     self.start_indent = self.next_indent
@@ -564,6 +564,26 @@ function MDRenderer:_list_end(next_block)
 
   if next_block.kind == "ul" or next_block.kind == "ol" then return self.list_depth == 0 end
   return true
+end
+
+---@return string?
+function MDRenderer:_last_line()
+  if #self.lines == 0 then return end
+
+  local newlines = 0
+  local line = {}
+
+  for i = #self.lines, 1, -1 do
+    local part = self.lines[i]
+    for j = #part, 1, -1 do
+      local c = part:sub(j, j)
+      if c == "\n" then newlines = newlines + 1 end
+
+      if newlines < 2 then table.insert(line, 1, c) end
+    end
+  end
+
+  return table.concat(line)
 end
 
 ---@param p docgen.MDNode.Paragraph
@@ -608,9 +628,9 @@ end
 function MDRenderer:_render_code_block(node, tabs)
   tabs = tabs == "" and TAB or tabs
 
-  local last_line = self.lines[#self.lines]
-  if last_line and last_line:match("^[ \n]*$") then
-    self.lines[#self.lines] = last_line:gsub("[ \n]+$", "")
+  local last_line = self:_last_line()
+  if last_line and not last_line:match("^[ \n]*$") then
+    self.lines[#self.lines] = self.lines[#self.lines]:gsub("[ \n]+$", "")
     table.insert(self.lines, " ")
   end
 
@@ -632,8 +652,28 @@ function MDRenderer:_render_ul(node)
     local marker_ws = string.rep(" ", start_indent)
     local marker = string.format("%s•%s", marker_ws, string.rep(" ", marker_size - 1))
 
-    local child_renderer =
-      MDRenderer:new(child, next_indent, next_indent, self.list_depth + 1, marker_size)
+    local child_renderer = MDRenderer:new(child, next_indent, next_indent, self.list_depth + 1)
+
+    local child_text = child_renderer:render():gsub("^ *", "")
+    table.insert(self.lines, string.format("%s%s%s", marker, child_text, sep))
+    start_indent = self.next_indent
+  end
+end
+
+---@param node docgen.MDNode.List
+function MDRenderer:_render_ol(node)
+  local marker_size = math.max(self.list_marker_size, node.marker_size)
+  local start_indent = self.start_indent
+  local next_indent = self.next_indent + marker_size
+  local sep = node.tight and "\n" or "\n\n"
+
+  for i, child in ipairs(node.items) do
+    local marker_ws = string.rep(" ", start_indent)
+    local marker_num = tostring(node.start + i - 1) .. "."
+    local marker =
+      string.format("%s%s%s", marker_ws, marker_num, string.rep(" ", marker_size - #marker_num))
+
+    local child_renderer = MDRenderer:new(child, next_indent, next_indent, self.list_depth + 1)
 
     local child_text = child_renderer:render():gsub("^ *", "")
     table.insert(self.lines, string.format("%s%s%s", marker, child_text, sep))

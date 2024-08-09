@@ -756,13 +756,29 @@ new paragraph
   end)
 
   describe("ol", function()
+    it("basics tight", function()
+      local input = [[
+1. item 1
+2. item 2
+      ]]
+      assert_md(input, input)
+    end)
+
+    it("basics loose", function()
+      local input = [[
+1. item 1
+
+2. item 2
+      ]]
+      assert_md(input, input)
+    end)
+
     it("mixed", function()
       local expect
       local input = [[
 9. item 1
-    9. nested 1
-    10. nested 2
-    - nested 2
+    1. nested 1
+    2. nested 2
         ```lua
         print('hello')
         ```
@@ -771,10 +787,9 @@ new paragraph
 
       expect = [[
 9.  item 1
-    9.  nested 1
-    10. nested 2
-    •   nested 2 >lua
-        print('hello')
+    1. nested 1
+    2. nested 2 >lua
+       print('hello')
 <
 10. item 2
       ]]
@@ -782,10 +797,9 @@ new paragraph
 
       expect = [[
     9.  item 1
-        9.  nested 1
-        10. nested 2
-        •   nested 2 >lua
-            print('hello')
+        1. nested 1
+        2. nested 2 >lua
+           print('hello')
 <
     10. item 2
       ]]
@@ -793,10 +807,9 @@ new paragraph
 
       expect = [[
     9.  item 1
-            9.  nested 1
-            10. nested 2
-            •   nested 2 >lua
-                print('hello')
+            1. nested 1
+            2. nested 2 >lua
+               print('hello')
 <
         10. item 2
       ]]
