@@ -402,11 +402,14 @@ end
 ---@param idx integer
 ---@return integer # line index after skipping the multiline comment
 local function skip_multiline_comment(lines, idx)
-  if lines[idx]:match("^ *%-%-%[%[") then
-    while lines[idx] and not lines[idx]:match("]]") do
-      idx = idx + 1
-      assert(idx < #lines, "Unterminated multiline comment")
-    end
+  local comment_delim = lines[idx]:match("^ *%-%-%[(=*)%[")
+  if comment_delim == nil then return idx end
+
+  local comment_end = string.format("]%s]", comment_delim)
+
+  while lines[idx] and not lines[idx]:match(comment_end) do
+    idx = idx + 1
+    assert(idx < #lines, "Unterminated multiline comment")
   end
   return idx
 end

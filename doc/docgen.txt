@@ -3,9 +3,42 @@ DOCGEN                                                           *docgen.nvim*
 
 Generate documentation from lua files with LuaCATS annotations + more.
 
+*docgen.FileSection*
+
+    Fields: ~
+      • {[1]}            (`string`) filepath from which to generate the
+                         section from
+      • {title}          (`string?`) title of the section
+
+                         if omitted, generated from the filename eg:
+                         • './lua/docgen/init.lua' -> 'DOCGEN'
+                         • './lua/docgen/grammar/init.lua' -> 'GRAMMAR'
+                         • './lua/docgen/grammar/luacats.lua' ->
+                           'GRAMMAR_LUACATS'
+      • {tag}            (`string?`) help tag of the section WITHOUT the
+                         asterisks
+
+                         if omitted, generated from the filename eg:
+                         • './lua/docgen/init.lua' -> 'docgen'
+                         • './lua/docgen/grammar/init.lua' -> 'grammar'
+                         • './lua/docgen/grammar/luacats.lua' ->
+                           'grammar.luacats'
+      • {fn_prefix}      (`string?`) module prefix for functions
+
+                         if omitted, generated from the filename same as
+                         `section_title` but in lowercase
+      • {fn_tag_prefix}  (`string?`) tag prefix for functions, if omitted,
+                         uses section tag as prefix
+
+
 docgen.run({config})                                       *docgen.nvim.run()*
     Parameters: ~
-      • {config}  (`docgen.Config`)
+      • {config}  (`table`) A table with the following fields:
+                  • {name} (`string`) plugin name, will be used to generate
+                    filename, eg `docgen` -> `docgen.txt`
+                  • {files} (`(string|docgen.FileSection)[]`) file
+                    paths/config to generate docs from in order
+
 
 ==============================================================================
 RENDERER                                                     *docgen.renderer*
@@ -30,16 +63,16 @@ renderer.render_funs({funs}, {classes}, {section}, {config})
     Return: ~
         (`string`)
 
-                                           *docgen.renderer.render_markdown()*
-renderer.render_markdown({markdown}, {start_indent}, {indent})
+                                                            *MDRenderer:new()*
+MDRenderer:new({md}, {start_indent}, {next_indent}, {list_depth}, {list_marker_size})
     Parameters: ~
-      • {markdown}      (`string`)
-      • {start_indent}  (`integer`) indentation amount for the first line
-      • {indent}        (`integer`) indentation amount for subsequent lines
+      • {md}                (`docgen.MDNode[]`)
+      • {start_indent}      (`integer`)
+      • {next_indent}       (`integer`)
+      • {list_depth}        (`integer?`)
+      • {list_marker_size}  (`integer?`)
 
-    Return: ~
-        (`string`)
-
+MDRenderer:render()                                      *MDRenderer:render()*
 renderer.render_briefs({briefs})             *docgen.renderer.render_briefs()*
     Parameters: ~
       • {briefs}  (`string[]`)
@@ -63,5 +96,6 @@ renderer.render_section({section}, {briefs}, {funs}, {classes}, {all_classes})
 renderer.append_modeline({doc_lines})
     Parameters: ~
       • {doc_lines}  (`string[]`)
+
 
  vim:tw=78:ts=8:sw=4:sts=4:et:ft=help:norl:

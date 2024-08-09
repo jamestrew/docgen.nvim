@@ -33,18 +33,18 @@ local M = {}
 ---
 --- if omitted, generated from the filename
 --- eg:
---- - './lua/telescope/init.lua'         -> 'TELESCOPE'
---- - './lua/telescope/actions/init.lua' -> 'ACTIONS'
---- - './lua/telescope/actions/set.lua'  -> 'ACTIONS_SET'
+--- - './lua/docgen/init.lua'             -> 'DOCGEN'
+--- - './lua/docgen/grammar/init.lua'     -> 'GRAMMAR'
+--- - './lua/docgen/grammar/luacats.lua'  -> 'GRAMMAR_LUACATS'
 ---@field title string?
 ---
 --- help tag of the section WITHOUT the asterisks
 ---
 --- if omitted, generated from the filename
 --- eg:
---- - './lua/telescope/init.lua'         -> 'telescope'
---- - './lua/telescope/actions/init.lua' -> 'telescope.actions'
---- - './lua/telescope/actions/set.lua'  -> 'telescope.actions.set'
+--- - './lua/docgen/init.lua'             -> 'docgen'
+--- - './lua/docgen/grammar/init.lua'     -> 'grammar'
+--- - './lua/docgen/grammar/luacats.lua'  -> 'grammar.luacats'
 ---@field tag string?
 ---
 --- module prefix for functions

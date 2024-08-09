@@ -13,4 +13,3 @@ TODO
 ## Credit
 - [lewis6991](https://github.com/lewis6991) on the Neovim core team for his
 work on the Neovim core doc gen script
-- markdown parsing is adapted from [lunamark](https://github.com/jgm/lunamark)
