@@ -15,6 +15,7 @@ Generate documentation from lua files with LuaCATS annotations + more.
                          • './lua/docgen/grammar/init.lua' -> 'GRAMMAR'
                          • './lua/docgen/grammar/luacats.lua' ->
                            'GRAMMAR_LUACATS'
+
       • {tag}            (`string?`) help tag of the section WITHOUT the
                          asterisks
 
@@ -23,10 +24,12 @@ Generate documentation from lua files with LuaCATS annotations + more.
                          • './lua/docgen/grammar/init.lua' -> 'grammar'
                          • './lua/docgen/grammar/luacats.lua' ->
                            'grammar.luacats'
+
       • {fn_prefix}      (`string?`) module prefix for functions
 
                          if omitted, generated from the filename same as
                          `section_title` but in lowercase
+
       • {fn_tag_prefix}  (`string?`) tag prefix for functions, if omitted,
                          uses section tag as prefix
 

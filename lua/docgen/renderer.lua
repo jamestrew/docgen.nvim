@@ -236,6 +236,15 @@ local function inline_type(obj, classes)
   obj.desc = desc
 end
 
+---@param text string
+---@return boolean
+local function has_blank_line(text)
+  for line in vim.gsplit(text, "\n") do
+    if line:match("^%s*$") then return true end
+  end
+  return false
+end
+
 ---@param objs (docgen.parser.field | docgen.parser.param)[]
 ---@param generics? table<string, string>
 ---@param classes table<string, docgen.parser.class>
@@ -259,7 +268,7 @@ local function render_fields_or_params(objs, generics, classes)
   end
 
   local indent_offset = indent + 9
-  for _, obj in ipairs(objs) do
+  for i, obj in ipairs(objs) do
     local desc, default = get_default(obj.desc)
     obj.desc = desc
 
@@ -277,13 +286,16 @@ local function render_fields_or_params(objs, generics, classes)
         table.insert(res, pname)
         if #pty > TEXT_WIDTH - indent then
           vim.list_extend(res, { " ", pty, "\n" })
-          table.insert(res, M.render_markdown(desc, indent_offset, indent_offset))
+          desc = M.render_markdown(desc, indent_offset, indent_offset)
+          table.insert(res, desc)
           table.insert(res, "\n")
         else
           desc = string.format("%s %s", pty, desc)
           desc = M.render_markdown(desc, #pname, indent_offset):gsub("^ *", "")
           table.insert(res, string.format(" %s\n", desc))
         end
+
+        if has_blank_line(desc) and i ~= #objs then table.insert(res, "\n") end
       else
         table.insert(res, string.format("%s %s\n", pname, pty))
       end

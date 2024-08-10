@@ -222,6 +222,7 @@ foo_bar.funky_params({foo}, {...}, {ty}, {bar})
                nisi ut aliquip ex ea commodo consequat.
                • here's a list for fun
                • another one
+
       • {...}  (`string`) some strings
       • {ty}   (``T``) some type
       • {bar}  (`(string|number)[]`) union array
@@ -406,6 +407,73 @@ describe("classes", function()
 
     Fields: ~
       • {emp_id}  (`number`)
+    ]]
+
+    assert_classes(input, expect)
+  end)
+
+  it("long descriptions", function()
+    local input = [[
+---@class docgen.FileSection
+---@field [1] string filepath from which to generate the section from
+---
+--- title of the section
+---
+--- if omitted, generated from the filename
+--- eg:
+--- - './lua/docgen/init.lua'             -> 'DOCGEN'
+--- - './lua/docgen/grammar/init.lua'     -> 'GRAMMAR'
+--- - './lua/docgen/grammar/luacats.lua'  -> 'GRAMMAR_LUACATS'
+---@field title string?
+---
+--- help tag of the section WITHOUT the asterisks
+---
+--- if omitted, generated from the filename
+--- eg:
+--- - './lua/docgen/init.lua'             -> 'docgen'
+--- - './lua/docgen/grammar/init.lua'     -> 'grammar'
+--- - './lua/docgen/grammar/luacats.lua'  -> 'grammar.luacats'
+---@field tag string?
+---
+--- module prefix for functions
+---
+--- if omitted, generated from the filename same as `section_title` but in lowercase
+---@field fn_prefix string?
+---
+--- tag prefix for functions, if omitted, uses section tag as prefix
+---@field fn_tag_prefix string?
+    ]]
+
+    local expect = [[
+*docgen.FileSection*
+
+    Fields: ~
+      • {[1]}            (`string`) filepath from which to generate the
+                         section from
+      • {title}          (`string?`) title of the section
+
+                         if omitted, generated from the filename eg:
+                         • './lua/docgen/init.lua' -> 'DOCGEN'
+                         • './lua/docgen/grammar/init.lua' -> 'GRAMMAR'
+                         • './lua/docgen/grammar/luacats.lua' ->
+                           'GRAMMAR_LUACATS'
+
+      • {tag}            (`string?`) help tag of the section WITHOUT the
+                         asterisks
+
+                         if omitted, generated from the filename eg:
+                         • './lua/docgen/init.lua' -> 'docgen'
+                         • './lua/docgen/grammar/init.lua' -> 'grammar'
+                         • './lua/docgen/grammar/luacats.lua' ->
+                           'grammar.luacats'
+
+      • {fn_prefix}      (`string?`) module prefix for functions
+
+                         if omitted, generated from the filename same as
+                         `section_title` but in lowercase
+
+      • {fn_tag_prefix}  (`string?`) tag prefix for functions, if omitted,
+                         uses section tag as prefix
     ]]
 
     assert_classes(input, expect)
