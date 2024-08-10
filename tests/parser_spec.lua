@@ -67,23 +67,13 @@ describe("class", function()
   )
 
   exp.myclass.nodoc = nil
-  exp.myclass.access = "private"
-
-  test(
-    "with (private)",
-    [[
-    --- @class (private) myclass
-    --- @field myclass integer
-  ]],
-    exp
-  )
 
   exp.myclass.fields[1].desc = "Field\ndocumentation"
 
   test(
     "with field doc above",
     [[
-    --- @class (private) myclass
+    --- @class myclass
     --- Field
     --- documentation
     --- @field myclass integer
@@ -95,7 +85,7 @@ describe("class", function()
   test(
     "with field doc inline",
     [[
-    --- @class (private) myclass
+    --- @class myclass
     --- @field myclass integer Field documentation
   ]],
     exp

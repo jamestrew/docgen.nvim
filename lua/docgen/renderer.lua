@@ -155,7 +155,7 @@ local function resolve_class_parents(class, classes)
   local cls = class
   while cls.parent and classes[cls.parent] do
     local parent = classes[cls.parent] ---@type docgen.parser.class
-    if parent.nodoc or parent.access then break end
+    if parent.nodoc then break end
     table.insert(parents, parent.name)
     cls = parent
   end
@@ -186,7 +186,7 @@ local function inline_type(obj, classes)
   obj.desc = obj.desc or ""
 
   if not cls.inlinedoc then
-    if cls.nodoc or cls.access then
+    if cls.nodoc then
       error(
         string.format(
           "Class `%s` is not to be documented as a parameter/field/return value.\n"
@@ -315,7 +315,7 @@ end
 ---@param classes table<string, docgen.parser.class>
 ---@return string?
 local function render_class(class, classes)
-  if class.access or class.nodoc or class.inlinedoc then return end
+  if class.nodoc or class.inlinedoc then return end
 
   local res = {}
 
@@ -517,7 +517,7 @@ function M.render_funs(funs, classes, section, config)
   return table.concat(res)
 end
 
----@class (private) MDRenderer
+---@class MDRenderer
 ---@field md docgen.MDNode[]
 ---@field start_indent integer
 ---@field next_indent integer
@@ -617,7 +617,7 @@ function MDRenderer:_render_paragraph(p, next_node)
     ---@cast inner string
     table.insert(self.lines, text_wrap(inner, self.start_indent, self.next_indent))
   else
-    ---@cast inner docgen.MDNode[]
+    ---@cast inner docgen.MDNode.Inline[]
     local curr_line = {}
     for _, node in ipairs(inner) do
       local ntype = node.type

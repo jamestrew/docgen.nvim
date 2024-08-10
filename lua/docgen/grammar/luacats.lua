@@ -86,7 +86,7 @@ local grammar = P({
     + annot("type", comma1(Ct(v.ctype)) * opt_desc)
     + annot("cast", ty_name * ws * opt(Sf("+-")) * v.ctype)
     + annot("generic", ty_name * opt(colon * v.ctype))
-    + annot("class", opt_exact * opt(paren(caccess)) * fill * ty_name * opt_parent)
+    + annot("class", opt_exact * fill * ty_name * opt_parent)
     + annot("field", opt(caccess * ws) * v.field_name * ws * v.ctype * opt_desc)
     + annot("operator", ty_name * opt(paren(Cg(v.ctype, "argtype"))) * colon * v.ctype)
     + annot(access)

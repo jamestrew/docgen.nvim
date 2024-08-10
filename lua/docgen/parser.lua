@@ -1,29 +1,29 @@
 local lua_grammar = require("docgen.grammar.lua")
 local luacats_grammar = require("docgen.grammar.luacats")
 
---- @class (private) docgen.parser.param
+--- @class docgen.parser.param
 --- @field name string
 --- @field type string
 --- @field desc? string
 
---- @class (private) docgen.parser.return
+--- @class docgen.parser.return
 --- @field name string
 --- @field type string
 --- @field desc? string
 
---- @class (private) docgen.parser.note
+--- @class docgen.parser.note
 --- @field desc? string
 
---- @class (private) docgen.parser.brief
+--- @class docgen.parser.brief
 --- @field kind 'brief'
 --- @field desc? string
 
---- @class (private) docgen.parser.alias
+--- @class docgen.parser.alias
 --- @field kind 'alias'
 --- @field type string[]
 --- @field desc? string
 
---- @class (private) docgen.parser.fun
+--- @class docgen.parser.fun
 --- @field name string
 --- @field params docgen.parser.param[]
 --- @field returns docgen.parser.return[]
@@ -42,24 +42,23 @@ local luacats_grammar = require("docgen.grammar.luacats")
 --- @field notes? docgen.parser.note[]
 --- @field see? docgen.parser.note[]
 
---- @class (private) docgen.parser.field
+--- @class docgen.parser.field
 --- @field name string
 --- @field type string
 --- @field desc string
 --- @field access? 'private'|'package'|'protected'
 
---- @class (private) docgen.parser.class
+--- @class docgen.parser.class
 --- @field kind 'class'
 --- @field parent? string
 --- @field name string
 --- @field desc string
 --- @field nodoc? true
 --- @field inlinedoc? true
---- @field access? 'private'|'package'|'protected'
 --- @field fields docgen.parser.field[]
 --- @field notes? string[]
 
---- @class (private) docgen.parser.State
+--- @class docgen.parser.State
 --- @field doc_lines? string[]
 --- @field cur_obj? docgen.parser.obj
 --- @field last_doc_item? docgen.parser.param|docgen.parser.return|docgen.parser.note
@@ -426,7 +425,7 @@ local M = {}
 function M.parse_str(str, filename)
   local funs = {} --- @type docgen.parser.fun[]
   local classes = {} --- @type table<string,docgen.parser.class>
-  local briefs = {} --- @type docgen.grammar.markdown.result[]
+  local briefs = {} --- @type string[]
   -- Keep track of any partial objects we don't commit
   local uncommitted = {} --- @type docgen.parser.obj[]
 
