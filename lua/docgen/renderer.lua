@@ -1,4 +1,4 @@
-local parse_md = require("docgen.md").parse_md
+local parse_md = require("docgen.markdown").parse_md
 
 local M = {}
 
@@ -617,7 +617,7 @@ function MDRenderer:_render_paragraph(p, next_node)
     ---@cast inner string
     table.insert(self.lines, text_wrap(inner, self.start_indent, self.next_indent))
   else
-    ---@cast inner docgen.MDNode__[]
+    ---@cast inner docgen.MDNode[]
     local curr_line = {}
     for _, node in ipairs(inner) do
       local ntype = node.type
