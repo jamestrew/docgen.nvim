@@ -1022,4 +1022,15 @@ new paragraph
     local expect = [[1. Create a script for `docgen.nvim` eg.]]
     assert_md(input, expect)
   end)
+
+  it("backslash_escape behavior", function()
+    local input = [[
+\> how's this
+      ]]
+    local expect = [[
+> how's this
+      ]]
+    assert_md(input, expect)
+  end)
+
 end)

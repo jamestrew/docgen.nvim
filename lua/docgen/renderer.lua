@@ -635,7 +635,7 @@ function MDRenderer:_render_paragraph(p, next_node)
           table.insert(curr_line, string.format("|%s|", node[1].text))
         end
       elseif ntype == "backslash_escape" then
-        table.insert(curr_line, node.text)
+        table.insert(curr_line, (node.text:gsub("\\", "")))
       elseif ntype == "emphasis" then
         table.insert(curr_line, node.text:sub(2, -2))
       elseif ntype == "html_tag" and node.text == "<br>" then
