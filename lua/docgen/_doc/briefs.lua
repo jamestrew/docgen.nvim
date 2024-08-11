@@ -1,0 +1,60 @@
+---@brief
+--- Briefs are a way to provide a high-level overview of the concepts in the file or plugin.
+--- They are defined using the `---@brief` custom annotation followed by some text.
+--- Any continuous lines of comments following the `---@brief` annotation will be used as
+--- the brief description.
+---
+--- eg.
+--- ~~~
+--- ---@brief
+--- --- The contents of the brief is parsed as markdown and subset of the markdown
+--- --- syntax will be rendered as vimdoc. In fact, this markdown parsing and
+--- --- rendering is applies to all annotation descriptions.
+--- ---
+--- --- The supported syntaxes are:
+--- --- - paragraphs
+--- --- - lists (unordered and ordered, nesting included)
+--- --- - various inline styles
+--- ---   - inline code span will be rendered as is
+--- ---   - italic/emphasis text will be rendered as plain text
+--- ---   - inline links (eg. `[hello]()`) will be rendered as a tag (eg. `*hello*`)
+--- ---   - shortcut links (eg. `[hello]`) will be rendered as a hot-link (eg. `|hello|`)
+--- ---   - `<br>` will be rendered as a newline
+--- --- - fenced code blocks (including language info)
+--- --- - `<pre>` blocks for pre-formatted text
+--- ---
+--- --- Other than `<pre>` and code blocks, all text will be wrapped at 78 characters.
+--- ---
+--- --- Here's a sample code block:
+--- --- ```lua
+--- --- print('hello world')
+--- --- ```
+--- ~~~
+---
+--- The above will be rendered as:
+--- ```
+--- The contents of the brief is parsed as markdown and subset of the markdown
+--- syntax will be rendered as vimdoc. In fact, this markdown parsing and
+--- rendering is applies to all annotation descriptions.
+---
+--- The supported syntaxes are:
+--- • paragraphs
+--- • lists (unordered and ordered, nesting included)
+--- • various inline styles
+---   • inline code span will be rendered as is
+---   • italic/emphasis text will be rendered as plain text
+---   • inline links will be rendered as a hot-link
+---   • `<br>` will be rendered as a newline
+--- • fenced code blocks (including language info)
+--- • `<pre>` blocks for pre-formatted text
+---
+--- Other than `<pre>` and code blocks, all text will be wrapped at 78
+--- characters.
+---
+--- Here's a sample code block: >lua
+---     print('hello world')
+--- <
+--- ```
+---
+--- Tip: Using `:setlocal formatoptions+=cro` is pretty handy for writing briefs.
+--- Also using `:set spell` can be helpful.

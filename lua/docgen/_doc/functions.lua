@@ -1,0 +1,62 @@
+---@brief
+--- Functions are annotated primarily via the `---@param` and `---@return`
+--- annotations from LuaCATS.<br>
+--- See: https://luals.github.io/wiki/annotations/#param<br>
+--- See: https://luals.github.io/wiki/annotations/#return<br>
+---
+--- Additionally, supports `---@see` (LuaCATS) and `---@note` (custom)
+--- annotations on functions.
+---
+--- eg.
+--- ```lua
+--- --- This is a description of the function. As usual, this description will be
+--- --- parsed as markdown.
+--- ---@note This is a note about the function.
+--- ---@see SomeOtherFunction
+--- ---@param a number first number
+--- ---@param b number second number
+--- ---@return number # the sum of `a` and `b`
+--- ---@return number # the product of `a` and `b`
+--- function M.myfunc(a, b) return a + b, a * b end
+--- ```
+--- This will be rendered something like:
+--- ~~~
+--- my_plugin.myfunc({a}, {b})                            *my_plugin.myfunc*
+---     This is a description of the function. As usual, this description
+---     will be parsed as markdown.
+---
+---     Note: ~
+---       • This is a note about the function.
+---
+---     Parameters: ~
+---       • `a` (`number`) first number
+---       • `b` (`number`) second number
+---
+---     Return (multiple): ~
+---         (`number`) the sum of `a` and `b`
+---         (`number`) the product of `a` and `b`
+---
+---     See also: ~
+---       • SomeOtherFunction
+--- ~~~
+---
+--- The header of the function can be customized via [docgen.FileSection] option.<br>
+--- Using the above example, you can use the options
+--- `{fn_prefix = "hello", fn_tag_prefix = "goodbye}` to render the function
+--- header as
+--- ~~~
+---   hello.myfunc({a}, {b})                                  *goodbye.myfunc*
+--- ~~~
+---
+--- docgen.nvim will create documentation for functions that meet the following:
+--- - The function is exported (ie. not local)
+--- - The function is not annotated with one of the following:
+---   - `---@nodoc`
+---   - `---@package`
+---   - `---@private`
+---   - `---@protected`
+---   - `---@deprecated`
+--- - The function has at least one annotation (will not document completely
+---   undocumented functions)
+--- - The function is not prefixed with an underscore `_`
+---

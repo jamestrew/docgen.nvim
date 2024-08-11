@@ -1,5 +1,61 @@
+-- luacheck: push ignore 631
 ---@brief
---- Generate documentation from lua files with LuaCATS annotations + more.
+--- Generate vimdoc for your Neovim plugin using LuaCATS (and a few extra) annotations
+--- within your lua files.
+---
+--- Getting started with `docgen.nvim`
+--- 1. Create a script for `docgen.nvim`
+---     eg.
+---     ```lua
+---     -- script/gendoc.lua
+---     vim.opt.rtp:append "."
+---
+---     -- `docgen.nvim` installation location
+---     vim.env.DOCGEN_PATH = vim.env.DOCGEN_PATH or ".deps/docgen.nvim"
+---
+---     -- bootstrap script will git clone `docgen.nvim` and place it in your
+---     -- runtimepath automatically
+---     -- if the `DOCGEN_PATH` env variable is defined, it will use the defined
+---     -- path instead of cloning another copy
+---     load(vim.fn.system "curl -s https://raw.githubusercontent.com/jamestrew/docgen.nvim/master/scripts/bootstrap.lua")()
+---
+---     -- main entry point
+---     require("docgen").run({
+---       name = "my_plugin", -- will be used to generate `doc/my_plugin.txt`
+---       files = {
+---         -- list the file you want used to generate vimdoc *IN ORDER* that they
+---         -- will appear in the vimdoc
+---
+---         ".lua/my_plugin/init.lua", -- can simply list file(s)
+---
+---         -- can optionally provide configuration for each file
+---         {
+---           ".lua/my_plugin/utils.lua",
+---           title = "UTIL",
+---         },
+---       },
+---     })
+---     ```
+---     See [docgen.run()] for more information on the configuration options.
+--- 2. Run your script above from your shell
+---     eg. `nvim -l script/gendoc.lua`
+--- 3. That's pretty much it. Any LuaCATS annotations in the files you listed will
+---    be used to generate the vimdoc for your plugin.
+---
+--- Each file provided to `require("docgen").run` can have up to three parts:
+--- 1. A section header (which always exists) like so
+---    ```
+---    ==========================================================================
+---    DOCGEN                                                     *docgen.nvim*
+---    ```
+---     The title of the section (on the left) and the tag (on the right) can be
+---     configured via the `title` and `tag` options in [docgen.FileSection]
+---     respectively.
+--- 2. A briefs section to discribe the main concepts in the given file/plugin
+---     (what you're reading now). See [docgen.briefs].
+--- 3. Type definitions for any classes defined in the file. See [docgen.classes].
+--- 4. Type definitions for any exported/public functions defined in the file. See [docgen.functions].
+-- luacheck: pop
 
 local parser = require("docgen.parser")
 local renderer = require("docgen.renderer")
@@ -15,17 +71,12 @@ local M = {}
 --- file paths/config to generate docs from in order
 ---@field files (string|docgen.FileSection)[]
 
----@nodoc
----@class docgen.FunConfig
----@field fn_xform? fun(fn: docgen.parser.fun)
+-- we'll see if something like this is needed later
+-- ---@nodoc
+-- ---@class docgen.FunConfig
+-- ---@field fn_xform? fun(fn: docgen.parser.fun)
 
----@nodoc
----@class docgen.section
----@field title string
----@field tag string
----@field fn_prefix string
----@field fn_tag_prefix string
-
+--- File section configuration provides to the `files` list in [docgen.run].
 ---@class docgen.FileSection
 ---@field [1] string filepath from which to generate the section from
 ---
@@ -84,6 +135,13 @@ local function section_tag(title, plugin_name)
   return title ~= name and string.format("%s.%s", name, title) or name
 end
 
+---@nodoc
+---@class docgen.section
+---@field title string
+---@field tag string
+---@field fn_prefix string
+---@field fn_tag_prefix string
+
 ---@param file string|docgen.FileSection
 ---@return docgen.section
 local function make_section(file, config)
@@ -120,6 +178,19 @@ local function trim_line_endings(lines)
   return table.concat(res, "\n")
 end
 
+--- Main entrypoint to generate documentation
+---
+--- eg.
+--- ```lua
+--- require("docgen").run({
+---   name = "docgen",
+---   files = {
+---     { "./lua/docgen/init.lua", tag = "docgen.nvim", fn_tag_prefix = "docgen" },
+---     "./lua/docgen/parser.lua",
+---     "./lua/docgen/renderer.lua",
+---   },
+--- })
+--- ```
 ---@param config docgen.Config
 M.run = function(config)
   local file_res = {} ---@type table<string, [table<string, docgen.parser.class>, docgen.parser.fun[], string[]]>

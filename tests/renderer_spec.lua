@@ -127,6 +127,8 @@ function M.qux() end
     local inputs = {
       "---@nodoc",
       "---@package",
+      "---@private",
+      "---@protected",
     }
 
     for _, tinput in ipairs(inputs) do
@@ -322,6 +324,37 @@ foo_bar.fire_employee({emp})                         *foo.bar.fire_employee()*
     assert_funs(input, expect)
   end)
 
+  it("inlined class with nodoc parents", function()
+    local input = [[
+---@nodoc
+---@class Person
+---@field name string
+---@field _private_field_1 string kinda private field
+---@field private private_field_2 string actually private
+---@field height number
+
+---@class Employee : Person
+---@inlinedoc
+---@field emp_id number
+
+--- get rekt
+---@param emp Employee
+function M.fire_employee(emp) end
+    ]]
+
+    local expect = [[
+foo_bar.fire_employee({emp})                         *foo.bar.fire_employee()*
+    get rekt
+
+    Parameters: ~
+      • {emp}  (`table`) A table with the following fields:
+               • {emp_id} (`number`)
+               • {name} (`string`)
+               • {height} (`number`)
+    ]]
+    assert_funs(input, expect)
+  end)
+
   it("default params", function()
     local input = [[
 ---@param x string some string (default: `"hello"`)
@@ -407,6 +440,31 @@ describe("classes", function()
 
     Fields: ~
       • {emp_id}  (`number`)
+    ]]
+
+    assert_classes(input, expect)
+  end)
+
+  it("inherits fields", function()
+    local input = [[
+---@inlinedoc
+---@class Person
+---@field name string
+---@field _private_field_1 string kinda private field
+---@field private private_field_2 string actually private
+---@field height number
+
+---@class Employee : Person
+---@field emp_id number
+    ]]
+
+    local expect = [[
+*Employee*
+
+    Fields: ~
+      • {emp_id}  (`number`)
+      • {name}    (`string`)
+      • {height}  (`number`)
     ]]
 
     assert_classes(input, expect)

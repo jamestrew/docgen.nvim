@@ -109,15 +109,15 @@ end
 ---@return docgen.MDNode.Html
 local function parse_html_block(node, text)
   text = vim.treesitter.get_node_text(node, text)
-  if text:find("^<br>") then return { kind = "br", lines = { "" } } end
+  if text:find("^ *<br>") then return { kind = "br", lines = { "" } } end
 
   assert(
-    text:find("^<pre>"),
+    text:find("^ *<pre>"),
     string.format("Only support <br> or <pre> html blocks, got: %s", text)
   )
 
   text = text:gsub("\n$", "")
-  text = text:gsub("^<pre>\n?", ""):gsub("\n?</pre>$", "")
+  text = text:gsub("^ *<pre>\n?", ""):gsub("\n?</pre>$", "")
   return {
     kind = "pre",
     lines = vim.split(text, "\n"),

@@ -1,9 +1,8 @@
 ==============================================================================
 DOCGEN                                                           *docgen.nvim*
 
-Generate documentation from lua files with LuaCATS annotations + more.
-
 *docgen.FileSection*
+    File section configuration provides to the `files` list in |docgen.run|.
 
     Fields: ~
       • {[1]}            (`string`) filepath from which to generate the
@@ -34,7 +33,20 @@ Generate documentation from lua files with LuaCATS annotations + more.
                          uses section tag as prefix
 
 
-docgen.run({config})                                       *docgen.nvim.run()*
+docgen.run({config})                                            *docgen.run()*
+    Main entrypoint to generate documentation
+
+    eg. >lua
+    require("docgen").run({
+      name = "docgen",
+      files = {
+        { "./lua/docgen/init.lua", tag = "docgen.nvim", fn_tag_prefix = "docgen" },
+        "./lua/docgen/parser.lua",
+        "./lua/docgen/renderer.lua",
+      },
+    })
+<
+
     Parameters: ~
       • {config}  (`table`) A table with the following fields:
                   • {name} (`string`) plugin name, will be used to generate
@@ -44,61 +56,198 @@ docgen.run({config})                                       *docgen.nvim.run()*
 
 
 ==============================================================================
-RENDERER                                                     *docgen.renderer*
+BRIEFS                                                         *docgen.briefs*
 
-                                            *docgen.renderer.render_classes()*
-renderer.render_classes({classes}, {all_classes})
+Briefs are a way to provide a high-level overview of the concepts in the file
+or plugin. They are defined using the `---@brief` custom annotation followed
+by some text. Any continuous lines of comments following the `---@brief`
+annotation will be used as the brief description.
+
+eg. >
+    ---@brief
+    --- The contents of the brief is parsed as markdown and subset of the markdown
+    --- syntax will be rendered as vimdoc. In fact, this markdown parsing and
+    --- rendering is applies to all annotation descriptions.
+    ---
+    --- The supported syntaxes are:
+    --- - paragraphs
+    --- - lists (unordered and ordered, nesting included)
+    --- - various inline styles
+    ---   - inline code span will be rendered as is
+    ---   - italic/emphasis text will be rendered as plain text
+    ---   - inline links (eg. `[hello]()`) will be rendered as a tag (eg. `*hello*`)
+    ---   - shortcut links (eg. `[hello]`) will be rendered as a hot-link (eg. `|hello|`)
+    ---   - `<br>` will be rendered as a newline
+    --- - fenced code blocks (including language info)
+    --- - `<pre>` blocks for pre-formatted text
+    ---
+    --- Other than `<pre>` and code blocks, all text will be wrapped at 78 characters.
+    ---
+    --- Here's a sample code block:
+    --- ```lua
+    --- print('hello world')
+    --- ```
+<
+The above will be rendered as: >
+    The contents of the brief is parsed as markdown and subset of the markdown
+    syntax will be rendered as vimdoc. In fact, this markdown parsing and
+    rendering is applies to all annotation descriptions.
+
+    The supported syntaxes are:
+    • paragraphs
+    • lists (unordered and ordered, nesting included)
+    • various inline styles
+      • inline code span will be rendered as is
+      • italic/emphasis text will be rendered as plain text
+      • inline links will be rendered as a hot-link
+      • `<br>` will be rendered as a newline
+    • fenced code blocks (including language info)
+    • `<pre>` blocks for pre-formatted text
+
+    Other than `<pre>` and code blocks, all text will be wrapped at 78
+    characters.
+
+    Here's a sample code block: >lua
+        print('hello world')
+    <
+<
+Tip: Using `:setlocal formatoptions+=cro` is pretty handy for writing briefs.
+Also using `:set spell` can be helpful.
+
+==============================================================================
+CLASSES                                                       *docgen.classes*
+
+Classes are defined using the `---@class` & `---@field` LuaCATS annotations.
+See: https://luals.github.io/wiki/annotations/#class
+See: https://luals.github.io/wiki/annotations/#field
+eg. >lua
+    ---@class MyClass
+    ---@field foo string this is a description of the field
+    ---
+    --- You can also write a description above the field if it's too long to
+    --- cleanly fit next to the field like the field above. Both of these descriptions
+    --- will be parsed as markdown so you can use the same markdown syntaxes as
+    --- in the brief.
+    ---@field bar number
+<
+However, there are a few additional annotations that can be used to control
+how they are rendered (or not) in the vimdoc.
+
+Excluding Classes (`---@nodoc`): *docgen.classes.nodoc*
+By default, any classes defined in a files included in the `docgen.run`
+function will be included in the vimdoc. Should you wish to exclude a class
+from being documented, you can use the `---@nodoc` annotation. eg. >lua
+    ---@nodoc
+    ---@class MyPrivateClass
+    ---@field foo string
+<
+
+Function Parameter Tables (`---@inlinedoc`): *docgen.classes.inlinedoc*
+You may have an `opt` table parameter or similar parameter for a function that
+is a table with many fields. You may want to use a class to define this table
+structure but you don't want to include the class in the vimdoc. You can use
+the `---@inlinedoc` annotation to have the class definition excluded from
+being documented as a class but the fields of the class will be used to
+generate the function signature. eg. >lua
+    ---@inlinedoc
+    ---@class MyOptTable
+    ---@field foo string some string
+    ---@field bar number some number
+
+    ---@param opt MyOptTable
+    function M.myfunc(opt) end
+<
+The paramters for the function above will then be documented as: >
     Parameters: ~
-      • {classes}      (`table<string, docgen.parser.class>`)
-      • {all_classes}  (`table<string, docgen.parser.class>`)
+      • `opt` (`table`) A table with the following fields:
+              • `foo` (`string`) some string
+              • `bar` (`number`) some number
+<
+Class Inheritance: *docgen.classes.inheritance*
+LuaCATS handles class inheritance with the following syntax: >lua
+    ---@class Animal
 
-    Return: ~
-        (`string`)
+    ---@class Dog : Animal
+<
+docgen.nvim will generate documention for the `Dog` class differently
+depending on if and how the `---@nodoc` and `---@inlinedoc` annotations are
+used on the `Dog` and `Animal` classes.
 
-                                               *docgen.renderer.render_funs()*
-renderer.render_funs({funs}, {classes}, {section}, {config})
-    Parameters: ~
-      • {funs}     (`docgen.parser.fun[]`)
-      • {classes}  (`table<string, docgen.parser.class>`)
-      • {section}  (`docgen.section`)
-      • {config}   (`docgen.FunConfig?`)
+If use neither `---@nodoc` nor `---@inlinedoc`, both classes will be
+documented and the `Dog` class will show in its description `Extends |Animal|`
+to indicate the inheritance.
 
-    Return: ~
-        (`string`)
+Note: Even if the `Animal` class is marked with `---@nodoc`, the `Dog` class
+will still show the inheritance.
 
-                                                            *MDRenderer:new()*
-MDRenderer:new({md}, {start_indent}, {next_indent}, {list_depth}, {list_marker_size})
-    Parameters: ~
-      • {md}                (`docgen.MDNode[]`)
-      • {start_indent}      (`integer`)
-      • {next_indent}       (`integer`)
-      • {list_depth}        (`integer?`)
-      • {list_marker_size}  (`integer?`)
+If the `Animal` class is marked with `---@inlinedoc`, the `Dog` class will
+resolve its inheritance and include all parent fields as its own in its
+documentation.
 
-MDRenderer:render()                                      *MDRenderer:render()*
-renderer.render_briefs({briefs})             *docgen.renderer.render_briefs()*
-    Parameters: ~
-      • {briefs}  (`string[]`)
+If `Dog` is marked `---@inlinedoc` and `Animal` is marked `---@nodoc`, `Dog`
+will still resolve its inheritance and include all parent fields as table
+params to be displayed in function signatures. See |docgen.classes.inlinedoc|.
 
-    Return: ~
-        (`string`)
+Note: Child classes will not inherit private fields from parent classes.
 
-                                            *docgen.renderer.render_section()*
-renderer.render_section({section}, {briefs}, {funs}, {classes}, {all_classes})
-    Parameters: ~
-      • {section}      (`docgen.section`)
-      • {briefs}       (`string[]`)
-      • {funs}         (`docgen.parser.fun[]`)
-      • {classes}      (`table<string, docgen.parser.class>`)
-      • {all_classes}  (`table<string, docgen.parser.class>`)
+==============================================================================
+FUNCTIONS                                                   *docgen.functions*
 
-    Return: ~
-        (`string`)
+Functions are annotated primarily via the `---@param` and `---@return`
+annotations from LuaCATS.
+See: https://luals.github.io/wiki/annotations/#param
+See: https://luals.github.io/wiki/annotations/#return
 
-                                           *docgen.renderer.append_modeline()*
-renderer.append_modeline({doc_lines})
-    Parameters: ~
-      • {doc_lines}  (`string[]`)
 
+Additionally, supports `---@see` (LuaCATS) and `---@note` (custom) annotations
+on functions.
+
+eg. >lua
+    --- This is a description of the function. As usual, this description will be
+    --- parsed as markdown.
+    ---@note This is a note about the function.
+    ---@see SomeOtherFunction
+    ---@param a number first number
+    ---@param b number second number
+    ---@return number # the sum of `a` and `b`
+    ---@return number # the product of `a` and `b`
+    function M.myfunc(a, b) return a + b, a * b end
+<
+This will be rendered something like: >
+    my_plugin.myfunc({a}, {b})                            *my_plugin.myfunc*
+        This is a description of the function. As usual, this description
+        will be parsed as markdown.
+
+        Note: ~
+          • This is a note about the function.
+
+        Parameters: ~
+          • `a` (`number`) first number
+          • `b` (`number`) second number
+
+        Return (multiple): ~
+            (`number`) the sum of `a` and `b`
+            (`number`) the product of `a` and `b`
+
+        See also: ~
+          • SomeOtherFunction
+<
+The header of the function can be customized via |docgen.FileSection| option.
+Using the above example, you can use the options
+`{fn_prefix = "hello", fn_tag_prefix = "goodbye}` to render the function
+header as >
+    hello.myfunc({a}, {b})                                  *goodbye.myfunc*
+<
+docgen.nvim will create documentation for functions that meet the following:
+• The function is exported (ie. not local)
+• The function is not annotated with one of the following:
+  • `---@nodoc`
+  • `---@package`
+  • `---@private`
+  • `---@protected`
+  • `---@deprecated`
+• The function has at least one annotation (will not document completely
+  undocumented functions)
+• The function is not prefixed with an underscore `_`
 
  vim:tw=78:ts=8:sw=4:sts=4:et:ft=help:norl:

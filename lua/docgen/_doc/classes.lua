@@ -1,0 +1,80 @@
+---@brief
+--- Classes are defined using the `---@class` & `---@field` LuaCATS annotations.<br>
+--- See: https://luals.github.io/wiki/annotations/#class<br>
+--- See: https://luals.github.io/wiki/annotations/#field<br>
+--- eg.
+--- ```lua
+--- ---@class MyClass
+--- ---@field foo string this is a description of the field
+--- ---
+--- --- You can also write a description above the field if it's too long to
+--- --- cleanly fit next to the field like the field above. Both of these descriptions
+--- --- will be parsed as markdown so you can use the same markdown syntaxes as
+--- --- in the brief.
+--- ---@field bar number
+--- ```
+--- However, there are a few additional annotations that can be used to control
+--- how they are rendered (or not) in the vimdoc.
+---
+--- Excluding Classes (`---@nodoc`): [docgen.classes.nodoc]()<br>
+--- By default, any classes defined in a files included in the `docgen.run`
+--- function will be included in the vimdoc. Should you wish to exclude a class
+--- from being documented, you can use the `---@nodoc` annotation. eg.
+--- ```lua
+--- ---@nodoc
+--- ---@class MyPrivateClass
+--- ---@field foo string
+--- ```
+--- <br>
+---
+--- Function Parameter Tables (`---@inlinedoc`): [docgen.classes.inlinedoc]()<br>
+--- You may have an `opt` table parameter or similar parameter for a function
+--- that is a table with many fields. You may want to use a class to define
+--- this table structure but you don't want to include the class in the vimdoc.
+--- You can use the `---@inlinedoc` annotation to have the class definition
+--- excluded from being documented as a class but the fields of the class will
+--- be used to generate the function signature. eg.
+--- ```lua
+--- ---@inlinedoc
+--- ---@class MyOptTable
+--- ---@field foo string some string
+--- ---@field bar number some number
+---
+--- ---@param opt MyOptTable
+--- function M.myfunc(opt) end
+--- ```
+--- The paramters for the function above will then be documented as:
+--- ```
+--- Parameters: ~
+---   • `opt` (`table`) A table with the following fields:
+---           • `foo` (`string`) some string
+---           • `bar` (`number`) some number
+--- ```
+---
+--- Class Inheritance: [docgen.classes.inheritance]()<br>
+--- LuaCATS handles class inheritance with the following syntax:
+--- ```lua
+--- ---@class Animal
+---
+--- ---@class Dog : Animal
+--- ```
+--- docgen.nvim will generate documention for the `Dog` class differently
+--- depending on if and how the `---@nodoc` and `---@inlinedoc` annotations are used
+--- on the `Dog` and `Animal` classes.
+---
+--- If use neither `---@nodoc` nor `---@inlinedoc`, both classes
+--- will be documented and the `Dog` class will show in its description
+--- `Extends |Animal|` to indicate the inheritance.
+---
+--- Note: Even if the `Animal` class is marked with `---@nodoc`, the `Dog`
+--- class will still show the inheritance.
+---
+--- If the `Animal` class is marked with `---@inlinedoc`, the `Dog` class will
+--- resolve its inheritance and include all parent fields as its own in its
+--- documentation.
+---
+--- If `Dog` is marked `---@inlinedoc` and `Animal` is marked `---@nodoc`,
+--- `Dog` will still resolve its inheritance and include all parent fields as
+--- table params to be displayed in function signatures. See [docgen.classes.inlinedoc].
+---
+--- Note: Child classes will not inherit private fields from parent classes.
