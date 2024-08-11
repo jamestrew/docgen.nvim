@@ -146,6 +146,9 @@ end
 ---@field lang string
 ---@field lines string[]
 
+local P, C = vim.lpeg.P, vim.lpeg.C
+local fence_delim = C((P("`") ^ 3) + (P("~") ^ 3))
+
 ---@param node TSNode
 ---@param text string
 ---@return docgen.MDNode.Code
@@ -156,8 +159,18 @@ local function parse_code_block(node, text)
     if ntype == "info_string" then
       res.lang = vim.treesitter.get_node_text(child, text)
     elseif ntype == "code_fence_content" then
-      local content = vim.treesitter.get_node_text(child, text):gsub("[ \n]+$", "")
-      res.lines = dedent_lines(vim.split(content, "\n"))
+      -- have to manually parse fenced content since tree-sitter isn't getting
+      -- correctly indented content with `get_node_text(child, text)`
+      local block_text = vim.treesitter.get_node_text(node, text):gsub("[ \n]+$", "")
+      local block_lines = vim.split(block_text, "\n")
+      local delim = fence_delim:match(block_lines[1])
+      if fence_delim:match(block_lines[#block_lines]) == delim then
+        block_lines = vim.list_slice(block_lines, 2, #block_lines - 1)
+      else
+        block_lines = vim.list_slice(block_lines, 2, #block_lines)
+      end
+
+      res.lines = dedent_lines(block_lines)
     end
   end
 

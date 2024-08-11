@@ -996,4 +996,21 @@ new paragraph
     ]]
     assert_md(input, expect, 4, 4)
   end)
+
+  it("code block in list", function()
+    local input = [[
+1. Create a script for `docgen.nvim`
+    ```lua
+    -- script/gendoc.lua
+    vim.opt.rtp:append "."
+    ```
+  ]]
+    local expect = [[
+1. Create a script for `docgen.nvim` >lua
+   -- script/gendoc.lua
+   vim.opt.rtp:append "."
+<
+    ]]
+    assert_md(input, expect)
+  end)
 end)
