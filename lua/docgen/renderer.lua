@@ -36,7 +36,6 @@ local text_wrap = function(text, start_indent, indents)
     if text:sub(i, i) == "`" then
       local code_end_idx = text:find("`", i + 1)
       if code_end_idx then
-        word = text:sub(i, code_end_idx)
         local _, next_word_start = text:find("%s+", code_end_idx + 1)
         if next_word_start then
           word = text:sub(i, next_word_start - 1)
