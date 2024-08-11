@@ -1,4 +1,5 @@
 -- luacheck: push ignore 631
+
 ---@brief
 --- Generate vimdoc for your Neovim plugin using LuaCATS (and a few extra) annotations
 --- within your lua files.
@@ -55,6 +56,7 @@
 ---     (what you're reading now). See [docgen.briefs].
 --- 3. Type definitions for any classes defined in the file. See [docgen.classes].
 --- 4. Type definitions for any exported/public functions defined in the file. See [docgen.functions].
+
 -- luacheck: pop
 
 local parser = require("docgen.parser")

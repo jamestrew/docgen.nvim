@@ -5,36 +5,35 @@ Generate vimdoc for your Neovim plugin using LuaCATS (and a few extra)
 annotations within your lua files.
 
 Getting started with `docgen.nvim`
-1. Create a script for `docgen.nvim`
-    eg. >lua
+1. Create a script for `docgen.nvim` eg. >lua
    -- script/gendoc.lua
-      vim.opt.rtp:append "."
+   vim.opt.rtp:append "."
 
-      -- `docgen.nvim` installation location
-      vim.env.DOCGEN_PATH = vim.env.DOCGEN_PATH or ".deps/docgen.nvim"
+   -- `docgen.nvim` installation location
+   vim.env.DOCGEN_PATH = vim.env.DOCGEN_PATH or ".deps/docgen.nvim"
 
-      -- bootstrap script will git clone `docgen.nvim` and place it in your
-      -- runtimepath automatically
-      -- if the `DOCGEN_PATH` env variable is defined, it will use the defined
-      -- path instead of cloning another copy
-      load(vim.fn.system "curl -s https://raw.githubusercontent.com/jamestrew/docgen.nvim/master/scripts/bootstrap.lua")()
+   -- bootstrap script will git clone `docgen.nvim` and place it in your
+   -- runtimepath automatically
+   -- if the `DOCGEN_PATH` env variable is defined, it will use the defined
+   -- path instead of cloning another copy
+   load(vim.fn.system "curl -s https://raw.githubusercontent.com/jamestrew/docgen.nvim/master/scripts/bootstrap.lua")()
 
-      -- main entry point
-      require("docgen").run({
-        name = "my_plugin", -- will be used to generate `doc/my_plugin.txt`
-        files = {
-          -- list the file you want used to generate vimdoc *IN ORDER* that they
-          -- will appear in the vimdoc
+   -- main entry point
+   require("docgen").run({
+     name = "my_plugin", -- will be used to generate `doc/my_plugin.txt`
+     files = {
+       -- list the file you want used to generate vimdoc *IN ORDER* that they
+       -- will appear in the vimdoc
 
-          ".lua/my_plugin/init.lua", -- can simply list file(s)
+       ".lua/my_plugin/init.lua", -- can simply list file(s)
 
-          -- can optionally provide configuration for each file
-          {
-            ".lua/my_plugin/utils.lua",
-            title = "UTIL",
-          },
-        },
-      })
+       -- can optionally provide configuration for each file
+       {
+         ".lua/my_plugin/utils.lua",
+         title = "UTIL",
+       },
+     },
+   })
 <
    See |docgen.run()| for more information on the configuration options.
 
@@ -47,7 +46,8 @@ Getting started with `docgen.nvim`
 Each file provided to `require("docgen").run` can have up to three parts:
 1. A section header (which always exists) like so >
    ==========================================================================
-      DOCGEN                                                     *docgen.nvim*
+   DOCGEN                                                     *docgen.nvim*
+   ```
 <
    The title of the section (on the left) and the tag (on the right) can be
    configured via the `title` and `tag` options in |docgen.FileSection|
@@ -226,14 +226,16 @@ LuaCATS handles class inheritance with the following syntax: >lua
 
     ---@class Dog : Animal
 <
-docgen.nvim will generate documention for the `Dog` classes differently
-depending on if the `---@nodoc` and `---@inlinedoc` annotations are used on
-the `Dog` class.
+docgen.nvim will generate documention for the `Dog` class differently
+depending on if and how the `---@nodoc` and `---@inlinedoc` annotations are
+used on the `Dog` and `Animal` classes.
 
 If use neither `---@nodoc` nor `---@inlinedoc`, both classes will be
 documented and the `Dog` class will show in its description `Extends |Animal|`
-to indicate the inheritance. Even if the `Animal` class is marked with
-`---@nodoc`, the `Dog` class will still show the inheritance.
+to indicate the inheritance.
+
+Note: Even if the `Animal` class is marked with `---@nodoc`, the `Dog` class
+will still show the inheritance.
 
 If the `Animal` class is marked with `---@inlinedoc`, the `Dog` class will
 resolve its inheritance and include all parent fields as its own in its
@@ -254,7 +256,8 @@ See: https://luals.github.io/wiki/annotations/#param
 See: https://luals.github.io/wiki/annotations/#return
 
 
-Additionally, support `---@note` and `---@see` annotations on functions.
+Additionally, supports `---@see` (LuaCATS) and `---@note` (custom) annotations
+on functions.
 
 eg. >lua
     --- This is a description of the function. As usual, this description will be
@@ -286,6 +289,12 @@ This will be rendered something like: >
         See also: ~
           • SomeOtherFunction
 <
+The header of the function can be customized via |docgen.FileSection| option.
+Using the above example, you can use the options
+`{fn_prefix = "hello", fn_tag_prefix = "goodbye}` to render the function
+header as >
+    hello.myfunc({a}, {b})                                  *goodbye.myfunc*
+<
 docgen.nvim will create documentation for functions that meet the following:
 • The function is exported (ie. not local)
 • The function is not annotated with one of the following:
@@ -297,12 +306,5 @@ docgen.nvim will create documentation for functions that meet the following:
 • The function has at least one annotation (will not document completely
   undocumented functions)
 • The function is not prefixed with an underscore `_`
-
-The header of the function can be customized via |docgen.FileSection| option.
-Using the above example, you can use the options
-`{fn_prefix = "hello", fn_tag_prefix = "goodbye}` to render the function
-header as >
-    hello.myfunc({a}, {b})                                  *goodbye.myfunc*
-<
 
  vim:tw=78:ts=8:sw=4:sts=4:et:ft=help:norl:

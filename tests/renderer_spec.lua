@@ -1013,4 +1013,13 @@ new paragraph
     ]]
     assert_md(input, expect)
   end)
+
+  it("new line after code span in ol", function()
+    local input = [[
+1. Create a script for `docgen.nvim`
+    eg.
+    ]]
+    local expect = [[1. Create a script for `docgen.nvim` eg.]]
+    assert_md(input, expect)
+  end)
 end)

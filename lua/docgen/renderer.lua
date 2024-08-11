@@ -615,6 +615,7 @@ function MDRenderer:_render_paragraph(p, next_node)
 
   if type(inner) == "string" then
     ---@cast inner string
+    inner = inner:gsub("[ \n]+", " ")
     table.insert(self.lines, text_wrap(inner, self.start_indent, self.next_indent))
   else
     ---@cast inner docgen.MDNode.Inline[]
@@ -622,7 +623,7 @@ function MDRenderer:_render_paragraph(p, next_node)
     for _, node in ipairs(inner) do
       local ntype = node.type
       if ntype == "text" then
-        table.insert(curr_line, node.text)
+        table.insert(curr_line, (node.text:gsub("[ \n]+", " ")))
       elseif ntype == "code_span" then
         table.insert(curr_line, node.text)
       elseif ntype == "inline_link" then
