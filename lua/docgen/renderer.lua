@@ -42,7 +42,8 @@ local text_wrap = function(text, start_indent, indents)
           word = text:sub(i, next_word_start - 1)
           i = next_word_start + 1
         else
-          i = code_end_idx + 1
+          word = text:sub(i, #text)
+          i = #text + 1
         end
       else
         word = text:sub(i)
@@ -422,21 +423,20 @@ local function render_fun_returns(returns, generics, classes)
   return table.concat(res)
 end
 
----@param fun docgen.parser.fun
----@param config? docgen.FunConfig
-local function xform_fn(fun, config)
-  if config and config.fn_xform then
-    config.fn_xform(fun)
-    return
-  end
-end
+-- ---@param fun docgen.parser.fun
+-- ---@param config? docgen.FunConfig
+-- local function xform_fn(fun, config)
+--   if config and config.fn_xform then
+--     config.fn_xform(fun)
+--     return
+--   end
+-- end
 
 ---@param fun docgen.parser.fun
 ---@param classes table<string, docgen.parser.class>
 ---@param section docgen.section
----@param config? docgen.FunConfig
 ---@return string?
-local function render_fun(fun, classes, section, config)
+local function render_fun(fun, classes, section)
   if fun.access or fun.deprecated or fun.nodoc then return end
   if vim.startswith(fun.name, "_") or fun.name:find("[:.]_") then return end
   if fun.desc == nil and fun.params == nil and fun.returns == nil and fun.notes == nil then
@@ -446,7 +446,7 @@ local function render_fun(fun, classes, section, config)
   local res = {}
   local bullet_offset = TAB_WIDTH * 2
 
-  xform_fn(fun, config)
+  -- xform_fn(fun, config)
 
   table.insert(res, render_fun_header(fun, section))
   table.insert(res, "\n")
@@ -506,12 +506,11 @@ end
 ---@param funs docgen.parser.fun[]
 ---@param classes table<string, docgen.parser.class>
 ---@param section docgen.section
----@param config? docgen.FunConfig
 ---@return string
-function M.render_funs(funs, classes, section, config)
+function M.render_funs(funs, classes, section)
   local res = {}
   for _, fun in ipairs(funs) do
-    local fun_doc = render_fun(fun, classes, section, config)
+    local fun_doc = render_fun(fun, classes, section)
     if fun_doc then table.insert(res, fun_doc) end
   end
   return table.concat(res)

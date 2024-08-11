@@ -1033,4 +1033,10 @@ new paragraph
     assert_md(input, expect)
   end)
 
+  it("code span immediately followed by more text and eol", function()
+    local input = [[
+`this`,
+      ]]
+    assert_md(input, input)
+  end)
 end)
