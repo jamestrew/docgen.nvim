@@ -6,11 +6,17 @@ A Neovim help doc generation tool HEAVILY inspired by Neovim core's doc gen tool
 Generate help docs with the same style and formatting as Neovim core's help
 docs using in-code annotations (LuaCATS + more).
 
+### Requirements
+
+- Neovim 0.10+
 
 ## Guide
+
 Getting started with `docgen.nvim`
+
 1. Create a script for `docgen.nvim`
     eg.
+
     ```lua
     -- script/gendoc.lua
     vim.opt.rtp:append "."
@@ -41,6 +47,7 @@ Getting started with `docgen.nvim`
       },
     })
     ```
+
     See [docgen.run()] for more information on the configuration options.
 2. Run your script above from your shell
     eg. `nvim -l script/gendoc.lua`
@@ -48,11 +55,14 @@ Getting started with `docgen.nvim`
    be used to generate the vimdoc for your plugin.
 
 Each file provided to `require("docgen").run` can have up to three parts:
+
 1. A section header (which always exists) like so
+
    ```
    ==========================================================================
    DOCGEN                                                     *docgen.nvim*
    ```
+
     The title of the section (on the left) and the tag (on the right) can be
     configured via the `title` and `tag` options in [docgen.FileSection]
     respectively.
@@ -61,10 +71,10 @@ Each file provided to `require("docgen").run` can have up to three parts:
 3. Type definitions for any classes defined in the file. See [docgen.classes].
 4. Type definitions for any exported/public functions defined in the file. See [docgen.functions].
 
-See [`:h
-docgen.nvim`](https://github.com/jamestrew/docgen.nvim/blob/master/doc/docgen.txt)
+See [`:h docgen.nvim`](https://github.com/jamestrew/docgen.nvim/blob/master/doc/docgen.txt)
 for more info for now.
 
 ## Credit
+
 - [lewis6991](https://github.com/lewis6991) on the Neovim core team for his
 work on the Neovim core doc gen script
