@@ -52,7 +52,7 @@ describe("functions", function()
     input = string.format("local M = {}\n%s\nreturn M\n", input)
     expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
     local classes, funs, _, _ = parser.parse_str(input, "foo.lua")
-    local actual = renderer.render_funs(funs, classes, section, {}):gsub("[ \n]+$", "")
+    local actual = renderer.render_funs(funs, classes, section):gsub("[ \n]+$", "")
     assert_lines(expect, actual, { classes = classes, funs = funs })
   end
 
@@ -359,14 +359,16 @@ foo_bar.fire_employee({emp})                         *foo.bar.fire_employee()*
     local input = [[
 ---@param x string some string (default: `"hello"`)
 ---@param y string cwd (default: `vim.uv.cwd()`)
+---@param z boolean some comment (default: `true`) and (other comment)
 function M.some_function(x, y) end
     ]]
 
     local expect = [[
-foo_bar.some_function({x}, {y})                      *foo.bar.some_function()*
+foo_bar.some_function({x}, {y}, {z})                 *foo.bar.some_function()*
     Parameters: ~
       • {x}  (`string`, default: `"hello"`) some string
       • {y}  (`string`, default: `vim.uv.cwd()`) cwd
+      • {z}  (`boolean`, default: `true`) some comment and (other comment)
     ]]
 
     assert_funs(input, expect)
