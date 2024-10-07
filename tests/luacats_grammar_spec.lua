@@ -206,92 +206,103 @@ end)
 
 describe("types", function()
   local types = require("docgen.grammar.types")
-
   ---@param idx integer
   ---@param input string
-  ---@param expected string|boolean
+  ---@param expected string?
   local function test_types(idx, input, expected)
     it(string.format("%d: can parse %q", idx, input), function()
       local actual = types:match(input)
-      if expected == true then
-        assert.same(input, actual)
-      elseif not expected then
-        assert.is_nil(actual)
-      else
-        assert.same(expected, actual)
-      end
+      assert.same(expected, actual)
     end)
   end
 
-  ---@type [string, string|boolean][]
+  ---@type [string, string?][]
   local test_cases = {
-    { "foo", true },
-    { "foo   ", "foo" },
-    { "true", true },
-    { "vim.type", true },
-    { "vim-type", true },
-    { "foo.bar-baz", true },
-    { "`ABC`", true },
-    { "42", true },
-    { "-42", true },
-    { "(foo)", "foo" },
-    { "true?", true },
-    { "(true)?", true },
-    { "string[]", true },
-    { "string|number", true },
-    { "(string)[]", true },
-    { "(string|number)[]", true },
-    { ")bad", false },
-    { "coalesce??", "coalesce?" },
-    { "number?|string", true },
-    { "'foo'|'bar'|'baz'", true },
-    { [["foo"|"bar"|"baz"]], true },
-    { "(number)?|string", true }, --
-    { "number[]|string", true },
-    { "string[]?", true },
-    { "wtf?[]", true },
+    { "foo" },
+    { "foo   ", "foo" }, -- trims whitespace
+    { "true" },
+    { "vim.type" },
+    { "vim-type" },
+    { "vim_type" },
+    { "foo.bar-baz_baz" },
+    { "`ABC`" },
+    { "42" },
+    { "-42" },
+    { "(foo)", "foo" }, -- removes unnecessary parens
+    { "true?" },
+    { "(true)?" },
+    { "string[]" },
+    { "string|number" },
+    { "(string)[]" },
+    { "(string|number)[]" },
+    { "coalesce??", "coalesce?" }, -- removes unnecessary ?
+    { "number?|string" },
+    { "'foo'|'bar'|'baz'" },
+    { '"foo"|"bar"|"baz"' },
+    { "(number)?|string" }, --
+    { "number[]|string" },
+    { "string[]?" },
+    { "foo?[]" },
     { "vim.type?|string?   ", "vim.type?|string?" },
+    { "number[][]" },
+    { "number[][][]" },
+    { "number[][]?" },
+    { "string|integer[][]?" },
 
     -- tuples
-    { "[string]", true },
-    { "[1]", true },
-    { "[string, number]", true },
-    { "[string, number]?", true },
-    { "[string, number][]", true },
-    { "[string, number]|string", true },
-    { "[string|number, number?]", true },
-    { "string|[string, number]", true },
-    { "(true)?|[foo]", true },
-    { "[fun(a: string):boolean]", true },
+    { "[string]" },
+    { "[1]" },
+    { "[string, number]" },
+    { "[string, number]?" },
+    { "[string, number][]" },
+    { "[string, number]|string" },
+    { "[string|number, number?]" },
+    { "string|[string, number]" },
+    { "(true)?|[foo]" },
+    { "[fun(a: string):boolean]" },
 
     -- dict
-    { "{[string]:string}", true },
-    { "{ [ string ] : string }", true },
-    { "{ [ string|any ] : string }", true },
-    { "{[string]: string, [number]: boolean}", true },
+    { "{[string]:string}" },
+    { "{ [ string ] : string }" },
+    { "{ [ string|any ] : string }" },
+    { "{[string]: string, [number]: boolean}" },
 
     -- key-value table
-    { "table<string,any>", true },
-    { "table", true },
-    { "string|table|boolean", true },
-    { "string|table|(boolean)", true },
+    { "table<string,any>" },
+    { "table" },
+    { "string|table|boolean" },
+    { "string|table|(boolean)" },
 
     -- table literal
-    { "{foo: number}", true },
-    { "{foo: string, bar: [number, boolean]?}", true },
+    { "{foo: number}" },
+    { "{foo: string, bar: [number, boolean]?}" },
+    { "boolean|{reverse?:boolean}" },
+    { "{ cmd?: string[] }" },
 
     -- function
-    { "fun(a: string, b:foo|bar): string", true },
-    { "(fun(a: string, b:foo|bar): string)?", true },
-    { "fun(a: string, b:foo|bar): string, string", true },
-    { "fun(a: string, b:foo|bar)", true },
-    -- {
-    --   "string|table|(fun(diagnostic:vim.Diagnostic,i:integer,total:integer): string, string)",
-    --   true,
-    -- },
+    { "fun(a: string, b:foo|bar): string" },
+    { "fun(a?: string): string" },
+    { "fun(a?: string): number?,string?" },
+    { "(fun(a: string, b:foo|bar): string)?" },
+    { "fun(a: string, b:foo|bar): string, string" },
+    { "fun(a: string, b:foo|bar)" },
+    { "fun(_, foo, bar): string" },
+    { "fun(...): number" },
+    { "fun( ... ): number" },
+    { "fun(...:number): number" },
+    { "fun( ... : number): number" },
+
+    -- generics
+    { "elem_or_list<string>" },
+    {
+      "elem_or_list<fun(client: vim.lsp.Client, initialize_result: lsp.InitializeResult)>",
+      nil,
+    },
   }
 
   for i, tc in ipairs(test_cases) do
-    test_types(i, tc[1], tc[2])
+    local ty, exp_ty = tc[1], tc[2]
+    if exp_ty == nil then exp_ty = ty end
+    test_types(i, ty, exp_ty)
   end
 end)

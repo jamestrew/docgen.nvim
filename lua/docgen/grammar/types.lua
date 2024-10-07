@@ -8,37 +8,42 @@ local any, num = util.any, util.num
 local v = util.v
 
 local lua = require("docgen.grammar.lua")
-local ident, type_ident = lua.ident, lua.type_ident
+local ident, ty_ident = lua.ident, lua.type_ident
+local opt_ident = ident * opt(P("?"))
 
+local colon = Pf(":")
+local ellipsis = P("...")
 local string_single = P("'") * rep(any - P("'")) * P("'")
 local string_double = P('"') * rep(any - P('"')) * P('"')
-local generic = P("`") * type_ident * "`"
+local generic = P("`") * ty_ident * "`"
 
 local literal = string_single + string_double + (opt("-") * rep(num, 1))
 
-local ty_prims = type_ident + literal + generic
+local ty_prims = ty_ident + literal + generic
 
 local array_postfix = rep1(Plf("[]"))
 local opt_postfix = rep1(Plf("?"))
+local rep_array_opt_postfix = rep(array_postfix + opt_postfix)
 
 local grammar = P({
   "typedef",
   typedef = C(v.type),
 
-  type = v.ty * rep(array_postfix + opt_postfix) * rep(Pf("|") * v.ty),
+  type = v.ty * rep_array_opt_postfix * rep(Pf("|") * v.ty * rep_array_opt_postfix),
   ty = v.composite + paren(v.typedef),
   composite = (v.types * array_postfix) + (v.types * opt_postfix) + v.types,
-  types = v.kv_table + v.tuple + v.dict + v.table_literal + v.fun + ty_prims,
+  types = v.generics + v.kv_table + v.tuple + v.dict + v.table_literal + v.fun + ty_prims,
 
   tuple = Pf("[") * comma1(v.type) * Plf("]"),
-  dict = Pf("{") * comma1(Pf("[") * v.type * Pf("]") * Pf(":") * v.type) * Plf("}"),
-  kv_table = Pf("table") * Pf("<") * v.type * Pf(",") * v.type * Pf(">"),
-  table_literal = Pf("{") * comma1(ident * Pf(":") * v.type) * Pf("}"),
-  fun = Pf("fun") * Pf("(") * comma(ident * Pf(":") * v.type) * Plf(")") * opt(
-    Pf(":") * comma1(v.type)
-  ),
+  dict = Pf("{") * comma1(Pf("[") * v.type * Pf("]") * colon * v.type) * Plf("}"),
+  kv_table = Pf("table") * Pf("<") * v.type * Pf(",") * v.type * Plf(">"),
+  table_literal = Pf("{") * comma1(opt_ident * Pf(":") * v.type) * Plf("}"),
+  fun_param = (opt_ident + ellipsis) * opt(colon * v.type),
+  fun_ret = v.type + (ellipsis * opt(colon * v.type)),
+  fun = Pf("fun") * paren(comma(v.fun_param)) * opt(Pf(":") * comma1(v.fun_ret)),
+  generics = P(ty_ident) * Pf("<") * comma1(v.type) * Plf(">"),
 }) / function(match)
-  return match:gsub("^%((.*)%)$", "%1"):gsub("%?+", "?")
+  return vim.trim(match):gsub("^%((.*)%)$", "%1"):gsub("%?+", "?")
 end
 
 return grammar
