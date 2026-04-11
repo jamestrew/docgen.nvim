@@ -759,6 +759,14 @@ function M.render_section(section, briefs, funs, classes, all_classes)
   return table.concat(res)
 end
 
+---@param name string
+---@param description string
+---@return string
+function M.render_file_header(name, description)
+  local tag = string.format("*%s.txt*", name)
+  return string.format("%s\n\n", tag .. "   " .. description)
+end
+
 ---@param doc_lines string[]
 function M.append_modeline(doc_lines)
   table.insert(

@@ -1,3 +1,5 @@
+*docgen.txt*   Generate vimdoc for your Neovim plugin from LuaCATS annotations
+
 ==============================================================================
 DOCGEN                                                           *docgen.nvim*
 
@@ -96,6 +98,7 @@ docgen.run({config})                                            *docgen.run()*
     eg. >lua
     require("docgen").run({
       name = "docgen",
+      description = "Short description for plugin",
       files = {
         { "./lua/docgen/init.lua", tag = "docgen.nvim", fn_tag_prefix = "docgen" },
         "./lua/docgen/parser.lua",
@@ -108,6 +111,8 @@ docgen.run({config})                                            *docgen.run()*
       • {config}  (`table`) A table with the following fields:
                   • {name} (`string`) plugin name, will be used to generate
                     filename, eg `docgen` -> `docgen.txt`
+                  • {description}? (`string`) short description shown in
+                    `:h local-additions`
                   • {files} (`(string|docgen.FileSection)[]`) file
                     paths/config to generate docs from in order
 

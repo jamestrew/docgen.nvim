@@ -70,6 +70,9 @@ local M = {}
 --- plugin name, will be used to generate filename, eg `docgen` -> `docgen.txt`
 ---@field name string
 ---
+--- short description shown in `:h local-additions`
+---@field description? string
+---
 --- file paths/config to generate docs from in order
 ---@field files (string|docgen.FileSection)[]
 
@@ -186,6 +189,7 @@ end
 --- ```lua
 --- require("docgen").run({
 ---   name = "docgen",
+---   description = "Short description for plugin",
 ---   files = {
 ---     { "./lua/docgen/init.lua", tag = "docgen.nvim", fn_tag_prefix = "docgen" },
 ---     "./lua/docgen/parser.lua",
@@ -207,6 +211,9 @@ M.run = function(config)
   end
 
   local doc_lines = {} ---@type string[]
+  if config.description then
+    table.insert(doc_lines, renderer.render_file_header(config.name, config.description))
+  end
   for _, file in vim.spairs(config.files) do
     local filepath = type(file) == "string" and file or file[1]
     print("    Generating docs for:", filepath)

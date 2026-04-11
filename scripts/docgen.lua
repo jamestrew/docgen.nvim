@@ -2,6 +2,7 @@ vim.opt.rtp:append(".")
 
 require("docgen").run({
   name = "docgen",
+  description = "Generate vimdoc for your Neovim plugin from LuaCATS annotations",
   files = {
     { "./lua/docgen/init.lua", tag = "docgen.nvim", fn_tag_prefix = "docgen" },
     { "./lua/docgen/_doc/briefs.lua", title = "BRIEFS", tag = "docgen.briefs" },
