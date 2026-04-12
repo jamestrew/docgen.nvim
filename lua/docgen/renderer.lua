@@ -257,6 +257,18 @@ local function render_fields_or_params(objs, generics, classes)
     if p.type or p.desc then indent = math.max(indent, #p.name + 3) end
   end
 
+  local function render_field_overloads(overloads)
+    if not overloads or #overloads == 0 then return "" end
+
+    local header_indent = string.format("%s    ", TAB)
+    local bullet_indent = string.format("%s      ", TAB)
+    local chunks = { "\n", string.format("%sOverloads: ~\n", header_indent) }
+    for _, overload in ipairs(overloads) do
+      table.insert(chunks, string.format("%s• `%s`\n", bullet_indent, overload))
+    end
+    return table.concat(chunks)
+  end
+
   local indent_offset = indent + 9
   for i, obj in ipairs(objs) do
     local desc, default = get_default(obj.desc)
@@ -264,6 +276,7 @@ local function render_fields_or_params(objs, generics, classes)
 
     inline_type(obj, classes)
     desc = obj.desc
+    local overload_text = render_field_overloads(obj.overloads)
 
     local fname = obj.kind == "operator" and string.format("op(%s)", obj.name)
       or format_field_name(obj.name)
@@ -278,21 +291,30 @@ local function render_fields_or_params(objs, generics, classes)
           vim.list_extend(res, { " ", pty, "\n" })
           desc = M.render_markdown(desc, indent_offset, indent_offset)
           table.insert(res, desc)
+          if overload_text ~= "" then table.insert(res, overload_text) end
           table.insert(res, "\n")
         else
           desc = string.format("%s %s", pty, desc)
           desc = M.render_markdown(desc, #pname, indent_offset):gsub("^ *", "")
           table.insert(res, string.format(" %s\n", desc))
+          if overload_text ~= "" then table.insert(res, overload_text) end
         end
 
-        if has_blank_line(desc) and i ~= #objs then table.insert(res, "\n") end
+        if (has_blank_line(desc) or overload_text ~= "") and i ~= #objs then
+          table.insert(res, "\n")
+        end
       else
         table.insert(res, string.format("%s %s\n", pname, pty))
+        if overload_text ~= "" then
+          table.insert(res, overload_text)
+          if i ~= #objs then table.insert(res, "\n") end
+        end
       end
     else
       if desc then
         table.insert(res, pname)
         table.insert(res, M.render_markdown(desc, 1, indent_offset))
+        if overload_text ~= "" then table.insert(res, overload_text) end
         table.insert(res, "\n")
       end
     end
@@ -476,6 +498,14 @@ local function render_fun(fun, classes, section)
       table.insert(res, return_text)
       table.insert(res, "\n")
     end
+  end
+
+  if fun.overloads and #fun.overloads > 0 then
+    table.insert(res, string.format("%sOverloads: ~\n", TAB))
+    for _, overload in ipairs(fun.overloads) do
+      table.insert(res, string.format("%s  • `%s`\n", TAB, overload))
+    end
+    table.insert(res, "\n")
   end
 
   if fun.see and #fun.see > 0 then

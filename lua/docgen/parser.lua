@@ -34,6 +34,8 @@ local luacats_grammar = require("docgen.grammar.luacats")
 --- @field modvar? string
 --- @field classvar? string
 --- @field deprecated? true
+--- @field async? true
+--- @field overloads? string[]
 --- @field since? string -- need?
 --- @field attrs? string[] -- need?
 --- @field nodoc? true
@@ -47,6 +49,7 @@ local luacats_grammar = require("docgen.grammar.luacats")
 --- @field type string
 --- @field desc string
 --- @field access? 'private'|'package'|'protected'
+--- @field overloads? string[]
 
 --- @class docgen.parser.class
 --- @field kind 'class'
@@ -181,6 +184,11 @@ local function process_doc_line(line, state)
     cur_obj.access = "protected"
   elseif kind == "deprecated" then
     cur_obj.deprecated = true
+  elseif kind == "async" then
+    cur_obj.async = true
+  elseif kind == "overload" then
+    cur_obj.overloads = cur_obj.overloads or {}
+    table.insert(cur_obj.overloads, parsed.type)
   elseif kind == "inlinedoc" then
     cur_obj.inlinedoc = true
   elseif kind == "nodoc" then
@@ -208,16 +216,16 @@ local function process_doc_line(line, state)
       desc = parsed.desc,
     }
   elseif kind == "enum" then
-    -- TODO
+    -- Enums do not contribute output today. Clear any pending doc state so
+    -- invalid follow-on annotations do not attach to a throwaway object.
     state.doc_lines = nil
-  elseif
-    vim.tbl_contains({
-      "diagnostic",
-      "cast",
-      "overload",
-      "meta",
-    }, kind)
-  then
+    state.cur_obj = nil
+    return
+  elseif vim.tbl_contains({
+    "diagnostic",
+    "cast",
+    "meta",
+  }, kind) then
     -- Ignore
     return
   elseif kind == "generic" then
@@ -232,9 +240,11 @@ end
 --- @return docgen.parser.field
 local function fun2field(fun)
   local parts = { "fun(" }
+  local params = {} --- @type string[]
   for _, p in ipairs(fun.params or {}) do
-    parts[#parts + 1] = string.format("%s: %s", p.name, p.type)
+    params[#params + 1] = string.format("%s: %s", p.name, p.type)
   end
+  parts[#parts + 1] = table.concat(params, ", ")
   parts[#parts + 1] = ")"
   if fun.returns then
     parts[#parts + 1] = ": "
@@ -250,6 +260,7 @@ local function fun2field(fun)
     type = table.concat(parts, ""),
     access = fun.access,
     desc = fun.desc,
+    overloads = fun.overloads,
   }
 end
 

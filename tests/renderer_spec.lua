@@ -355,6 +355,27 @@ foo_bar.fire_employee({emp})                         *foo.bar.fire_employee()*
     assert_funs(input, expect)
   end)
 
+  it("overloads", function()
+    local input = [[
+---@overload fun(x: string): boolean
+---@overload fun(x: number): string
+---@param x string
+function M.myfunc(x) end
+    ]]
+
+    local expect = [[
+foo_bar.myfunc({x})                                         *foo.bar.myfunc()*
+    Parameters: ~
+      • {x}  (`string`)
+
+    Overloads: ~
+      • `fun(x: string): boolean`
+      • `fun(x: number): string`
+    ]]
+
+    assert_funs(input, expect)
+  end)
+
   it("default params", function()
     local input = [[
 ---@param x string some string (default: `"hello"`)
@@ -383,6 +404,30 @@ describe("classes", function()
     local actual = renderer.render_classes(classes, classes):gsub("[ \n]+$", "")
     assert_lines(expect, actual, { classes = classes })
   end
+
+  it("renders method overloads on class fields", function()
+    local input = [[
+---@class MyClass
+local MyClass = {}
+
+--- some method
+---@overload fun(self: MyClass, x: string): boolean
+---@overload fun(self: MyClass, x: number): string
+---@param x string
+function MyClass:myfunc(x) end
+    ]]
+    local expect = [[
+*MyClass*
+
+    Fields: ~
+      • {myfunc}  (`fun(self: MyClass, x: string)`) some method
+
+        Overloads: ~
+          • `fun(self: MyClass, x: string): boolean`
+          • `fun(self: MyClass, x: number): string`
+    ]]
+    assert_classes(input, expect)
+  end)
 
   it("basic", function()
     local input = [[
