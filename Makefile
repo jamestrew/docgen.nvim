@@ -1,12 +1,9 @@
-.PHONY: test docgen lint lint-check all
+.PHONY: test lint all lint-check
 
-all: test docgen lint
+all: test lint
 
 test:
 	nvim -l ./tests/busted.lua tests
-
-docgen:
-	nvim -l ./scripts/docgen.lua
 
 lint:
 	stylua lua/
