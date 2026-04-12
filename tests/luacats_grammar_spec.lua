@@ -204,6 +204,29 @@ describe("fields", function()
   })
 end)
 
+describe("async", function()
+  test("@async", { kind = "async" })
+end)
+
+describe("overload", function()
+  test("@overload fun(x: string): boolean", {
+    kind = "overload",
+    type = "fun(x: string): boolean",
+  })
+
+  test("@overload fun(): nil", {
+    kind = "overload",
+    type = "fun(): nil",
+  })
+end)
+
+describe("enum", function()
+  test("@enum MyEnum", {
+    kind = "enum",
+    name = "MyEnum",
+  })
+end)
+
 describe("types", function()
   local types = require("docgen.grammar.types")
   ---@param idx integer

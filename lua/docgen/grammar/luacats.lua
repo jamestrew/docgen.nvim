@@ -91,6 +91,7 @@ local grammar = P({
     + annot("operator", ty_name * opt(paren(Cg(v.ctype, "argtype"))) * colon * v.ctype)
     + annot(access)
     + annot("deprecated")
+    + annot("async")
     + annot("alias", ty_name * opt(ws * v.ctype))
     + annot("enum", ty_name)
     + annot("overload", v.ctype)
