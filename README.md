@@ -133,9 +133,9 @@ annotation will be used as the brief description.
 
 ```lua
 ---@brief
---- The contents of the brief is parsed as markdown and subset of the markdown
+--- The contents of the brief is parsed as markdown and a subset of the markdown
 --- syntax will be rendered as vimdoc. In fact, this markdown parsing and
---- rendering is applies to all annotation descriptions.
+--- rendering applies to all annotation descriptions.
 ---
 --- The supported syntaxes are:
 --- - paragraphs
