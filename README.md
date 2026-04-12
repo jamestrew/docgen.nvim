@@ -323,7 +323,7 @@ function M.some_function(x, y, z) end
 This renders roughly as:
 
 ```help
-foo_bar.some_function({x}, {y}, {z})                 *foo.bar.some_function()*
+foo_bar.some_function({x}, {y}, {z})                 *foo_bar.some_function*
     Parameters: ~
       • {x}  (`string`, default: `"hello"`) some string
       • {y}  (`string`, default: `vim.uv.cwd()`) cwd
