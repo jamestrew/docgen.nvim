@@ -5,7 +5,7 @@ source files.
 
 `docgen.nvim` is heavily inspired by Neovim core's doc generation tooling and
 produces help docs in the same general style and layout as built-in Vim/Neovim
-documentation. The goal is to generally standardize way of writing and
+documentation. The goal is to generally standardize the way of writing and
 rendering help docs.
 
 ## Status
