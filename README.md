@@ -339,8 +339,8 @@ as:
 hello.myfunc({a}, {b})                                  *goodbye.myfunc*
 ```
 
-This is useful when you have functions defined in one module but is re-exported
-by another, user facing module.
+This is useful when you have functions defined in one module but are re-exported
+by another, user-facing module.
 
 `docgen.nvim` will generate documentation for functions that meet all of the
 following:
