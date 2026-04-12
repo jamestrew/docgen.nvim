@@ -1,4 +1,4 @@
-.PHONY: test docgen lint all
+.PHONY: test docgen lint lint-check all
 
 all: test docgen lint
 
@@ -12,3 +12,6 @@ lint:
 	stylua lua/
 	luacheck lua/
 
+lint-check:
+	stylua --check lua/
+	luacheck lua/
