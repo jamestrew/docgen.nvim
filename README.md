@@ -8,10 +8,6 @@ produces help docs in the same general style and layout as built-in Vim/Neovim
 documentation. The goal is to generally standardize the way of writing and
 rendering help docs.
 
-## Status
-
-This project is still under construction.
-
 ## Requirements
 
 - Neovim 0.10+
@@ -58,7 +54,7 @@ Create a `Makefile` target:
 
 ```makefile
 .deps/docgen.nvim:
-	git clone --depth 1 https://github.com/jamestrew/docgen.nvim $@
+	git clone --depth 1 --branch v1.0.0 https://github.com/jamestrew/docgen.nvim $@
 
 .PHONY: docgen
 docgen: .deps/docgen.nvim
