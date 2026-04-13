@@ -794,7 +794,7 @@ end
 ---@return string
 function M.render_file_header(name, description)
   local tag = string.format("*%s.txt*", name)
-  return string.format("%s\n\n", tag .. "   " .. description)
+  return string.format("%s%" .. (TEXT_WIDTH - #tag) .. "s\n\n", tag, description)
 end
 
 ---@param doc_lines string[]

@@ -1087,3 +1087,18 @@ new paragraph
     assert_md(input, input)
   end)
 end)
+
+describe("file header", function()
+  it("works", function()
+    local result = renderer.render_file_header("myplugin", "My plugin description")
+    local lines = vim.split(result, "\n")
+    assert.equal(#lines, 3)
+
+    local line = lines[1]
+    assert.equal(type(line), "string")
+    ---@cast line string
+    assert.equal(78, #line)
+    assert.truthy(vim.startswith(line, "*myplugin.txt*"))
+    assert.truthy(vim.endswith(line, "My plugin description"))
+  end)
+end)
