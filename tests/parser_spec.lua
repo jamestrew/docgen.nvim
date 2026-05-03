@@ -152,6 +152,53 @@ return M
     assert.same({ "fun(x: string): boolean", "fun(x: number): string" }, funs[1].overloads)
   end)
 
+  it("records member_sep for class members", function()
+    local input = [[
+---@class MyClass
+local MyClass = {}
+
+--- dot member
+---@param obj MyClass
+function MyClass.dot_member(obj) end
+
+--- colon member
+function MyClass:colon_member() end
+
+return MyClass
+    ]]
+    local _, funs, _, _ = parser.parse_str(input, "myfile.lua")
+
+    assert.same(".", funs[1].member_sep)
+    assert.same("MyClass", funs[1].classvar)
+    assert.same("MyClass", funs[1].modvar)
+    assert.same("obj", funs[1].params[1].name)
+
+    assert.same(":", funs[2].member_sep)
+    assert.same("self", funs[2].params[1].name)
+    assert.same("MyClass", funs[2].params[1].type)
+  end)
+
+  it("keeps non-returned dot members as class fields", function()
+    local input = [[
+local M = {}
+---@class Helper
+local Helper = {}
+
+--- helper field
+---@param h Helper
+function Helper.field(h) end
+
+return M
+    ]]
+    local classes, _, _, _ = parser.parse_str(input, "myfile.lua")
+
+    assert.same({
+      name = "field",
+      type = "fun(h: Helper)",
+      desc = "helper field",
+    }, classes.Helper.fields[1])
+  end)
+
   it("@overload is preserved for class methods converted to fields", function()
     local input = [[
 local M = {}

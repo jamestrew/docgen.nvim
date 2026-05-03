@@ -585,6 +585,137 @@ function MyClass:myfunc(x) end
   end)
 end)
 
+describe("class module functions", function()
+  ---@type docgen.section
+  local section = {
+    title = "FOO_BAR",
+    tag = "foo.bar",
+    fn_prefix = "foo_bar",
+    fn_tag_prefix = "foo.bar",
+  }
+
+  local assert_output = function(input, expect_funs, expect_classes)
+    expect_funs = expect_funs:gsub("^\n+", ""):gsub("[ \n]+$", "")
+    expect_classes = expect_classes:gsub("^\n+", ""):gsub("[ \n]+$", "")
+    local classes, funs, _, _ = parser.parse_str(input, "foo.lua")
+    local funs_text = renderer.render_funs(funs, classes, section):gsub("[ \n]+$", "")
+    local classes_text = renderer.render_classes(classes, classes, funs):gsub("[ \n]+$", "")
+    assert_lines(expect_funs, funs_text, { classes = classes, funs = funs })
+    assert_lines(expect_classes, classes_text, { classes = classes, funs = funs })
+  end
+
+  it("dot member renders as module fun, colon member stays a method", function()
+    local input = [[
+---@class M
+---@field value integer some value
+local M = {}
+
+--- Converts to cursor position.
+---@param pos M
+---@return integer, integer
+function M.to_cursor(pos) end
+
+--- Instance method.
+---@return integer
+function M:row() end
+
+return M
+    ]]
+
+    local expect_funs = [[
+to_cursor({pos})                                         *foo.bar.to_cursor()*
+    Converts to cursor position.
+
+    Parameters: ~
+      • {pos}  (`M`) See |M|
+
+    Return (multiple): ~
+        (`integer`)
+        (`integer`)
+
+M:row()                                                              *M:row()*
+    Instance method.
+
+    Return: ~
+        (`integer`)
+    ]]
+
+    local expect_classes = [[
+*M*
+
+    Fields: ~
+      • {value}  (`integer`) some value
+      • {row}    (`fun(self: M): integer`) Instance method.
+    ]]
+
+    assert_output(input, expect_funs, expect_classes)
+  end)
+
+  it("dot member on non-module class stays in class Fields", function()
+    local input = [[
+local M = {}
+
+---@class Helper
+local Helper = {}
+
+--- Helper fn.
+---@param h Helper
+function Helper.do_it(h) end
+
+return M
+    ]]
+
+    local expect_funs = [[
+Helper:do_it({h})                                             *Helper:do_it()*
+    Helper fn.
+
+    Parameters: ~
+      • {h}  (`Helper`) See |Helper|
+    ]]
+
+    local expect_classes = [[
+*Helper*
+
+    Fields: ~
+      • {do_it}  (`fun(h: Helper)`) Helper fn.
+    ]]
+
+    assert_output(input, expect_funs, expect_classes)
+  end)
+
+  it("long dot-member signature wraps using short name", function()
+    local input = [[
+---@class M
+local M = {}
+
+--- long one
+---@param a string
+---@param b string
+---@param c string
+function M.this_is_a_really_long_function_name_that_should_be_wrapped(a, b, c) end
+
+return M
+    ]]
+
+    local expect_funs = [[
+        *foo.bar.this_is_a_really_long_function_name_that_should_be_wrapped()*
+this_is_a_really_long_function_name_that_should_be_wrapped({a}, {b}, {c})
+    long one
+
+    Parameters: ~
+      • {a}  (`string`)
+      • {b}  (`string`)
+      • {c}  (`string`)
+    ]]
+
+    local expect_classes = [[
+*M*
+    ]]
+
+    assert_output(input, expect_funs, expect_classes)
+  end)
+end)
+
 describe("render_markdown", function()
   local assert_md = function(input, expect, start_indent, indent)
     start_indent = start_indent or 0

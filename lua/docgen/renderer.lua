@@ -6,6 +6,18 @@ local TEXT_WIDTH = 78
 local TAB_WIDTH = 4
 local TAB = string.rep(" ", TAB_WIDTH)
 
+--- True when a class member was declared with `.` on a table that is also the
+--- module return value. Such members are rendered as module functions rather
+--- than class methods.
+---@param fun docgen.parser.fun
+---@return boolean
+local function is_module_fun(fun)
+  return fun.classvar ~= nil
+    and fun.member_sep == "."
+    and fun.modvar ~= nil
+    and fun.classvar == fun.modvar
+end
+
 -- luacheck: ignore 211
 ---@diagnostic disable-next-line: unused-local, unused-function
 local function string_literal(str)
@@ -325,8 +337,9 @@ end
 
 ---@param class docgen.parser.class
 ---@param classes table<string, docgen.parser.class>
+---@param hidden_fields? table<string, true>
 ---@return string?
-local function render_class(class, classes)
+local function render_class(class, classes, hidden_fields)
   if class.nodoc or class.inlinedoc then return end
 
   local res = {}
@@ -352,7 +365,14 @@ local function render_class(class, classes)
     table.insert(res, "\n")
   end
 
-  local fields_text = render_fields_or_params(class.fields, nil, classes)
+  local fields = class.fields
+  if hidden_fields then
+    fields = vim.tbl_filter(function(f)
+      return not hidden_fields[f.name]
+    end, fields)
+  end
+
+  local fields_text = render_fields_or_params(fields, nil, classes)
   if not fields_text:match("^%s*$") then
     table.insert(res, string.format("\n%sFields: ~\n", TAB))
     table.insert(res, fields_text)
@@ -364,11 +384,22 @@ end
 
 ---@param classes table<string, docgen.parser.class>
 ---@param all_classes table<string, docgen.parser.class>
+---@param funs? docgen.parser.fun[]
 ---@return string
-function M.render_classes(classes, all_classes)
+function M.render_classes(classes, all_classes, funs)
+  -- Dot members of a class-as-module render as module functions, so hide them
+  -- from the class Fields listing.
+  local hidden_by_class = {} ---@type table<string, table<string, true>>
+  for _, fun in ipairs(funs or {}) do
+    if is_module_fun(fun) and fun.class then
+      hidden_by_class[fun.class] = hidden_by_class[fun.class] or {}
+      hidden_by_class[fun.class][fun.name] = true
+    end
+  end
+
   local res = {}
   for _, class in vim.spairs(classes) do
-    local class_desc = render_class(class, all_classes)
+    local class_desc = render_class(class, all_classes, hidden_by_class[class.name])
     if class_desc and not class_desc:match("^%s*$") then table.insert(res, class_desc) end
   end
   return table.concat(res)
@@ -385,14 +416,21 @@ local function render_fun_header(fun, section)
     if param.name ~= "self" then table.insert(params, format_field_name(param.name)) end
   end
 
-  local name = fun.classvar and string.format("%s:%s", fun.classvar, fun.name)
-    or string.format("%s.%s", section.fn_prefix, fun.name)
+  local module_fun = is_module_fun(fun)
+  local name
+  if module_fun then
+    name = fun.name
+  elseif fun.classvar then
+    name = string.format("%s:%s", fun.classvar, fun.name)
+  else
+    name = string.format("%s.%s", section.fn_prefix, fun.name)
+  end
   local param_str = table.concat(params, ", ")
   local proto = fun.table and name or string.format("%s(%s)", name, param_str)
 
   local fn_suffix = fun.table and "" or "()"
   local tag
-  if fun.classvar then
+  if fun.classvar and not module_fun then
     tag = string.format("*%s:%s%s*", fun.classvar, fun.name, fn_suffix)
   else
     tag = string.format("*%s.%s%s*", section.fn_tag_prefix, fun.name, fn_suffix)
@@ -774,7 +812,7 @@ function M.render_section(section, briefs, funs, classes, all_classes)
     table.insert(res, "\n\n")
   end
 
-  local classes_text = M.render_classes(classes, all_classes)
+  local classes_text = M.render_classes(classes, all_classes, funs)
   if not classes_text:match("^%s*$") then
     table.insert(res, classes_text)
     table.insert(res, "\n")
