@@ -618,6 +618,119 @@ FOO_BAR                                                              *foo.bar*
 
     assert_section(input, expect)
   end)
+
+  it("dot member renders as module fun, colon member stays a method", function()
+    local input = [[
+---@class M
+---@field value integer some value
+local M = {}
+
+--- Converts to cursor position.
+---@param pos M
+---@return integer, integer
+function M.to_cursor(pos) end
+
+--- Instance method.
+---@return integer
+function M:row() end
+
+return M
+    ]]
+
+    local expect = [[
+FOO_BAR                                                              *foo.bar*
+
+*M*
+
+    Fields: ~
+      • {value}  (`integer`) some value
+      • {row}    (`fun(self: M): integer`) See |M:row()|.
+
+
+to_cursor({pos})                                         *foo.bar.to_cursor()*
+    Converts to cursor position.
+
+    Parameters: ~
+      • {pos}  (`M`) See |M|
+
+    Return (multiple): ~
+        (`integer`)
+        (`integer`)
+
+M:row()                                                              *M:row()*
+    Instance method.
+
+    Return: ~
+        (`integer`)
+    ]]
+
+    assert_section(input, expect)
+  end)
+
+  it("dot member on non-module class stays in class Fields", function()
+    local input = [[
+local M = {}
+
+---@class Helper
+local Helper = {}
+
+--- Helper fn.
+---@param h Helper
+function Helper.do_it(h) end
+
+return M
+    ]]
+
+    local expect = [[
+FOO_BAR                                                              *foo.bar*
+
+*Helper*
+
+    Fields: ~
+      • {do_it}  (`fun(h: Helper)`) See |Helper:do_it()|.
+
+
+Helper:do_it({h})                                             *Helper:do_it()*
+    Helper fn.
+
+    Parameters: ~
+      • {h}  (`Helper`) See |Helper|
+    ]]
+
+    assert_section(input, expect)
+  end)
+
+  it("long dot-member signature wraps using short name", function()
+    local input = [[
+---@class M
+local M = {}
+
+--- long one
+---@param a string
+---@param b string
+---@param c string
+function M.this_is_a_really_long_function_name_that_should_be_wrapped(a, b, c) end
+
+return M
+    ]]
+
+    local expect = [[
+FOO_BAR                                                              *foo.bar*
+
+*M*
+
+        *foo.bar.this_is_a_really_long_function_name_that_should_be_wrapped()*
+this_is_a_really_long_function_name_that_should_be_wrapped({a}, {b}, {c})
+    long one
+
+    Parameters: ~
+      • {a}  (`string`)
+      • {b}  (`string`)
+      • {c}  (`string`)
+    ]]
+
+    assert_section(input, expect)
+  end)
 end)
 
 describe("render_markdown", function()
