@@ -261,6 +261,7 @@ local function fun2field(fun)
     access = fun.access,
     desc = fun.desc,
     overloads = fun.overloads,
+    classvar = fun.classvar,
   }
 end
 

@@ -275,8 +275,13 @@ local function render_fields_or_params(objs, generics, classes)
     obj.desc = desc
 
     inline_type(obj, classes)
-    desc = obj.desc
-    local overload_text = render_field_overloads(obj.overloads)
+    if obj.classvar then
+      desc = string.format("See |%s:%s()|.", obj.classvar, obj.name)
+      obj.desc = desc
+    else
+      desc = obj.desc
+    end
+    local overload_text = obj.classvar and "" or render_field_overloads(obj.overloads)
 
     local fname = obj.kind == "operator" and string.format("op(%s)", obj.name)
       or format_field_name(obj.name)

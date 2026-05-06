@@ -14,9 +14,9 @@ local inspect_diff = function(expected, actual, other)
   }
   ---@diagnostic disable-next-line: missing-parameter
   return "actual-expected\n"
-    .. tostring(vim.diff(string_literal(actual), string_literal(expected), opts))
-    .. "\n"
-    .. vim.inspect(other)
+      .. tostring(vim.text.diff(string_literal(actual), string_literal(expected), opts))
+      .. "\n"
+      .. vim.inspect(other)
 end
 
 ---@param expect string
@@ -397,16 +397,25 @@ foo_bar.some_function({x}, {y}, {z})                 *foo.bar.some_function()*
 end)
 
 describe("classes", function()
-  local assert_classes = function(input, expect)
-    input = string.format("local M = {}\n%s\nreturn M\n", input)
+  ---@type docgen.section
+  local section = {
+    title = "FOO_BAR",
+    tag = "foo.bar",
+    fn_prefix = "foo_bar",
+    fn_tag_prefix = "foo.bar",
+  }
+
+  local assert_section = function(input, expect)
     expect = expect:gsub("^\n+", ""):gsub("[ \n]+$", "")
-    local classes, _, _, _ = parser.parse_str(input, "foo.lua")
-    local actual = renderer.render_classes(classes, classes):gsub("[ \n]+$", "")
-    assert_lines(expect, actual, { classes = classes })
+    local classes, funs, briefs, _ = parser.parse_str(input, "foo.lua")
+    local actual = renderer.render_section(section, briefs, funs, classes, classes)
+    actual = actual:gsub("^[^\n]*\n", ""):gsub("[ \n]+$", "")
+    assert_lines(expect, actual, { classes = classes, funs = funs })
   end
 
   it("renders method overloads on class fields", function()
     local input = [[
+local M = {}
 ---@class MyClass
 local MyClass = {}
 
@@ -415,22 +424,33 @@ local MyClass = {}
 ---@overload fun(self: MyClass, x: number): string
 ---@param x string
 function MyClass:myfunc(x) end
+return M
     ]]
     local expect = [[
+FOO_BAR                                                              *foo.bar*
+
 *MyClass*
 
     Fields: ~
-      • {myfunc}  (`fun(self: MyClass, x: string)`) some method
+      • {myfunc}  (`fun(self: MyClass, x: string)`) See |MyClass:myfunc()|.
 
-        Overloads: ~
-          • `fun(self: MyClass, x: string): boolean`
-          • `fun(self: MyClass, x: number): string`
+
+MyClass:myfunc({x})                                         *MyClass:myfunc()*
+    some method
+
+    Parameters: ~
+      • {x}  (`string`)
+
+    Overloads: ~
+      • `fun(self: MyClass, x: string): boolean`
+      • `fun(self: MyClass, x: number): string`
     ]]
-    assert_classes(input, expect)
+    assert_section(input, expect)
   end)
 
   it("basic", function()
     local input = [[
+local M = {}
 --- some description about Foobar
 --- - here's a list
 ---     - it's nested
@@ -446,8 +466,11 @@ function MyClass:myfunc(x) end
 ---@field c boolean
 ---@field d "rfc2396"| "rfc2732" | "rfc3986" | nil
 ---@field e fun(a: table<string,any>): string hello this is a description
+return M
     ]]
     local expect = [[
+FOO_BAR                                                              *foo.bar*
+
 *Foobar*
     some description about Foobar
     • here's a list
@@ -465,11 +488,12 @@ function MyClass:myfunc(x) end
       • {e}   (`fun(a: table<string,any>): string`) hello this is a
               description
     ]]
-    assert_classes(input, expect)
+    assert_section(input, expect)
   end)
 
   it("extends", function()
     local input = [[
+local M = {}
 ---@nodoc
 ---@class Person
 ---@field name string
@@ -479,9 +503,12 @@ function MyClass:myfunc(x) end
 
 ---@class Employee : Person
 ---@field emp_id number
+return M
     ]]
 
     local expect = [[
+FOO_BAR                                                              *foo.bar*
+
 *Employee*
     Extends |Person|
 
@@ -489,11 +516,12 @@ function MyClass:myfunc(x) end
       • {emp_id}  (`number`)
     ]]
 
-    assert_classes(input, expect)
+    assert_section(input, expect)
   end)
 
   it("inherits fields", function()
     local input = [[
+local M = {}
 ---@inlinedoc
 ---@class Person
 ---@field name string
@@ -503,9 +531,12 @@ function MyClass:myfunc(x) end
 
 ---@class Employee : Person
 ---@field emp_id number
+return M
     ]]
 
     local expect = [[
+FOO_BAR                                                              *foo.bar*
+
 *Employee*
 
     Fields: ~
@@ -514,11 +545,12 @@ function MyClass:myfunc(x) end
       • {height}  (`number`)
     ]]
 
-    assert_classes(input, expect)
+    assert_section(input, expect)
   end)
 
   it("long descriptions", function()
     local input = [[
+local M = {}
 ---@class docgen.FileSection
 ---@field [1] string filepath from which to generate the section from
 ---
@@ -547,9 +579,12 @@ function MyClass:myfunc(x) end
 ---
 --- tag prefix for functions, if omitted, uses section tag as prefix
 ---@field fn_tag_prefix string?
+return M
     ]]
 
     local expect = [[
+FOO_BAR                                                              *foo.bar*
+
 *docgen.FileSection*
 
     Fields: ~
@@ -581,7 +616,7 @@ function MyClass:myfunc(x) end
                          uses section tag as prefix
     ]]
 
-    assert_classes(input, expect)
+    assert_section(input, expect)
   end)
 end)
 
@@ -643,9 +678,9 @@ another paragraph for the `y` parameter. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA BBBBB
 
     it("one continous line", function()
       local input =
-        "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
+      "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
       local expect =
-        "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
+      "thisisaverylonglineoftextthatshouldbewrappedat79charactersgottakeepgoingandgoing"
       assert_md(input, expect)
     end)
 
@@ -1031,7 +1066,7 @@ new paragraph
 
   it("huh", function()
     local input =
-      "some description about Foobar\n- here's a list\n    - it's nested\n\n```lua\nprint('hello')\n```"
+    "some description about Foobar\n- here's a list\n    - it's nested\n\n```lua\nprint('hello')\n```"
     local expect = [[
     some description about Foobar
     • here's a list
