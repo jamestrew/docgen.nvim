@@ -226,7 +226,9 @@ local function inline_type(obj, classes)
   local cls_descs = {}
   for _, field in ipairs(cls.fields) do
     if not field.access and not vim.startswith(field.name, "_") then
+      inline_type(field, classes)
       local fdesc, fdefault = get_default(field.desc)
+      if fdesc then fdesc = fdesc:gsub("\n(- {)", "\n  %1") end
       local field_ty = render_type(field.type, nil, fdefault)
       local field_name = format_field_name(field.name)
       table.insert(cls_descs, string.format("- %s %s %s", field_name, field_ty, fdesc))

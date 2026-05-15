@@ -355,6 +355,95 @@ foo_bar.fire_employee({emp})                         *foo.bar.fire_employee()*
     assert_funs(input, expect)
   end)
 
+  it("inlined class inheriting from inlined class", function()
+    local input = [[
+---@class Animal
+---@inlinedoc
+---@field species string the species name
+---@field legs number number of legs
+
+---@class Dog : Animal
+---@inlinedoc
+---@field name string the dog's name
+
+--- pets the dog
+---@param dog Dog
+function M.pet_dog(dog) end
+    ]]
+
+    local expect = [[
+foo_bar.pet_dog({dog})                                     *foo.bar.pet_dog()*
+    pets the dog
+
+    Parameters: ~
+      • {dog}  (`table`) A table with the following fields:
+               • {name} (`string`) the dog's name
+               • {species} (`string`) the species name
+               • {legs} (`number`) number of legs
+    ]]
+    assert_funs(input, expect)
+  end)
+
+  it("inlined class field that is itself an inlined class", function()
+    local input = [[
+---@class Point
+---@inlinedoc
+---@field x number
+---@field y number
+
+---@class Box
+---@inlinedoc
+---@field origin Point
+---@field label string
+
+--- draw it
+---@param b Box
+function M.draw(b) end
+    ]]
+
+    local expect = [[
+foo_bar.draw({b})                                             *foo.bar.draw()*
+    draw it
+
+    Parameters: ~
+      • {b}  (`table`) A table with the following fields:
+             • {origin} (`table`) A table with the following fields:
+               • {x} (`number`)
+               • {y} (`number`)
+             • {label} (`string`)
+    ]]
+    assert_funs(input, expect)
+  end)
+
+  it("inlined class with three levels of inlined parents", function()
+    local input = [[
+---@class Base
+---@inlinedoc
+---@field id number
+
+---@class Middle : Base
+---@inlinedoc
+---@field label string
+
+---@class Leaf : Middle
+---@inlinedoc
+---@field active boolean
+
+---@param opts Leaf
+function M.do_thing(opts) end
+    ]]
+
+    local expect = [[
+foo_bar.do_thing({opts})                                  *foo.bar.do_thing()*
+    Parameters: ~
+      • {opts}  (`table`) A table with the following fields:
+                • {active} (`boolean`)
+                • {label} (`string`)
+                • {id} (`number`)
+    ]]
+    assert_funs(input, expect)
+  end)
+
   it("overloads", function()
     local input = [[
 ---@overload fun(x: string): boolean
