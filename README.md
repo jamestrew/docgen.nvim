@@ -42,6 +42,7 @@ Supported annotations include:
 - `---@note` for additional notes
 - `---@nodoc` to exclude items from generated docs
 - `---@inlinedoc` to inline table-like class fields into function parameter docs
+- `---@eval` to embed Lua-evaluated output into docs at generation time
 
 References:
 
@@ -66,6 +67,7 @@ Entrypoint script for defining docgen config:
 ```lua
 -- scripts/gendoc.lua
 vim.opt.rtp:prepend(".deps/docgen.nvim")
+vim.opt.rtp:prepend(".")  -- add your plugin to rtp if needed (e.g. for @eval)
 
 require("docgen").run({
   name = "my_plugin",
@@ -347,6 +349,24 @@ following:
 - have at least one annotation
 - not prefixed with `_`
 
+
+### Eval
+
+The `---@eval` annotation evaluates a Lua expression at documentation generation
+time and embeds the return value into the generated docs. This is useful for
+including computed values, inspected tables, or other dynamic content.
+
+```lua
+--- Default configuration:
+---@eval return vim.inspect(require("my_plugin").default_config)
+function M.setup(opts) end
+```
+
+The expression is executed via `loadstring` during parsing, so any Lua
+available in the doc-generation environment can be used. Any modules you
+`require` must be on the runtimepath — add them in your entrypoint script
+(e.g. `vim.opt.rtp:prepend(".")`). Errors during evaluation will halt
+generation with a message.
 
 ## Credit
 
